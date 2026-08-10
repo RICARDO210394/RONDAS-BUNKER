@@ -1,0 +1,2773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache">
+<title>Control de Rondas de Supervisores</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  :root{
+    --azul-950:#0b1b2b;
+    --azul-900:#0f2a44;
+    --azul-800:#15385c;
+    --azul-700:#1c4a78;
+    --azul-600:#2563a0;
+    --azul-500:#3b82c4;
+    --gris-50:#f5f7fa;
+    --gris-100:#eef1f5;
+    --gris-200:#dde3ea;
+    --gris-400:#9aa7b5;
+    --gris-600:#5b6b7c;
+    --gris-800:#2b3846;
+    --verde:#1f9d55;
+    --verde-bg:#e6f6ec;
+    --rojo:#c62828;
+    --rojo-bg:#fdeaea;
+    --ambar:#b8860b;
+    --ambar-bg:#fdf3e0;
+    --radio:10px;
+    --sombra:0 2px 10px rgba(15,42,68,.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:var(--gris-50);
+    color:var(--gris-800);
+  }
+  .app-shell{
+    max-width:980px;
+    margin:14px auto 0;
+    border:1.5px solid #1a1a1a;
+    border-radius:2px;
+    overflow:hidden;
+    background:#fff;
+    position:sticky;
+    top:0;
+    z-index:30;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  header{
+    background:#fff;
+    color:var(--azul-900);
+    padding:20px 22px 16px;
+    border-bottom:1.5px solid #1a1a1a;
+  }
+  header h1{
+    margin:0;
+    font-size:1.55rem;
+    font-weight:800;
+    letter-spacing:.2px;
+    color:#1c3f94;
+    text-transform:uppercase;
+  }
+  header .sub{
+    font-size:.78rem;
+    color:var(--gris-600);
+    margin-top:4px;
+  }
+  nav.tabs{
+    display:flex;
+    background:#fff;
+    overflow-x:auto;
+    gap:2px;
+    padding:2px;
+  }
+  nav.tabs button{
+    flex:1 1 auto;
+    min-width:130px;
+    background:#1c3f94;
+    border:none;
+    color:#fff;
+    padding:14px 10px;
+    font-size:.8rem;
+    font-weight:700;
+    letter-spacing:.3px;
+    cursor:pointer;
+    white-space:nowrap;
+    text-transform:uppercase;
+  }
+  nav.tabs button:hover{
+    background:#16327a;
+  }
+  nav.tabs button.active{
+    background:#0f2a63;
+    box-shadow:inset 0 -4px 0 #3b82c4;
+  }
+  main{
+    max-width:980px;
+    margin:0 auto;
+    padding:16px;
+  }
+  .panel{display:none;}
+  .panel.active{display:block;animation:fadein .15s ease;}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .card{
+    background:#fff;
+    border:1px solid var(--gris-200);
+    border-radius:var(--radio);
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:var(--sombra);
+  }
+  .card h2{
+    margin:0 0 4px;
+    font-size:1.02rem;
+    color:var(--azul-900);
+  }
+  .card .desc{
+    font-size:.78rem;
+    color:var(--gris-600);
+    margin-bottom:12px;
+  }
+  label{
+    display:block;
+    font-size:.76rem;
+    font-weight:600;
+    color:var(--gris-600);
+    margin:10px 0 4px;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  input,select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--gris-200);
+    border-radius:8px;
+    font-size:.92rem;
+    background:#fff;
+    color:var(--gris-800);
+  }
+  input:focus,select:focus{
+    outline:none;
+    border-color:var(--azul-500);
+    box-shadow:0 0 0 3px rgba(59,130,196,.15);
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;}
+  @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
+  .minutos-box{
+    margin-top:12px;
+    background:var(--gris-100);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:.85rem;
+    color:var(--azul-900);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .minutos-box b{font-size:1.05rem;}
+  .btn{
+    margin-top:14px;
+    background:var(--azul-700);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:11px 16px;
+    font-size:.9rem;
+    font-weight:600;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn:hover{background:var(--azul-600);}
+  .btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+  }
+  .btn.secundario{
+    background:#fff;
+    color:var(--azul-700);
+    border:1px solid var(--azul-700);
+  }
+  .btn.chico{width:auto;padding:6px 12px;font-size:.76rem;margin-top:0;}
+  table.param-tabla .btn.chico{
+    padding:4px 8px;
+    font-size:.68rem;
+    white-space:nowrap;
+  }
+  .msg{
+    margin-top:10px;
+    font-size:.82rem;
+    padding:8px 10px;
+    border-radius:6px;
+    display:none;
+  }
+  .msg.ok{display:block;background:var(--verde-bg);color:var(--verde);}
+  .msg.err{display:block;background:var(--rojo-bg);color:var(--rojo);}
+
+  /* Historial */
+  details.dia{
+    border:1px solid var(--gris-200);
+    border-radius:var(--radio);
+    margin-bottom:10px;
+    overflow:hidden;
+    background:#fff;
+  }
+  details.dia summary{
+    list-style:none;
+    cursor:pointer;
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--gris-100);
+    font-weight:700;
+    font-size:.88rem;
+    color:var(--azul-900);
+  }
+  details.dia summary::-webkit-details-marker{display:none;}
+  details.dia summary .flecha{transition:transform .15s;color:var(--gris-600);}
+  details.dia[open] summary .flecha{transform:rotate(90deg);}
+  .dia-body{padding:12px 14px;}
+
+  /* Nivel Mes (agrupa los dias) */
+  details.mes-bloque{
+    border:1px solid var(--azul-700);
+    border-radius:var(--radio);
+    margin-bottom:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  details.mes-bloque summary{
+    list-style:none;
+    cursor:pointer;
+    padding:13px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--azul-700);
+    color:#fff;
+    font-weight:800;
+    font-size:.95rem;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  details.mes-bloque summary::-webkit-details-marker{display:none;}
+  details.mes-bloque summary .total{color:#dbe8f7;font-weight:800;}
+  .mes-body{padding:14px;}
+
+  .resumen-mes-wrap{
+    background:var(--gris-100);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-bottom:16px;
+  }
+  .resumen-mes-titulo{
+    margin:0 0 8px;
+    font-size:.82rem;
+    color:var(--azul-900);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  table.resumen-mes-tabla{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.8rem;
+  }
+  table.resumen-mes-tabla th{
+    text-align:left;
+    padding:5px 8px;
+    font-size:.7rem;
+    text-transform:uppercase;
+    color:var(--gris-600);
+    border-bottom:1px solid var(--gris-200);
+  }
+  table.resumen-mes-tabla td{
+    padding:6px 8px;
+    border-bottom:1px solid #fff;
+  }
+  table.resumen-mes-tabla tbody tr:nth-child(odd){background:#fff;}
+
+  details.piazza-mes{
+    border:1px solid var(--gris-200);
+    border-radius:8px;
+    margin-bottom:10px;
+    overflow:hidden;
+    background:#fdfdfd;
+  }
+  details.piazza-mes summary{
+    list-style:none;
+    cursor:pointer;
+    padding:10px 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--azul-900);
+    color:#fff;
+    font-weight:700;
+    font-size:.85rem;
+  }
+  details.piazza-mes summary::-webkit-details-marker{display:none;}
+  details.piazza-mes summary .total{color:#cfe0f2;font-weight:700;}
+  .piazza-mes-body{padding:10px 12px;}
+  .piazza-mes-body details.dia{margin-bottom:8px;}
+  .piazza-mes-body details.dia:last-child{margin-bottom:0;}
+
+  .turno-bloque{margin-bottom:12px;}
+  .turno-bloque h4{
+    margin:0 0 6px;
+    font-size:.8rem;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    color:var(--gris-600);
+    display:flex;
+    justify-content:space-between;
+  }
+  .turno-bloque h4 span.total{color:var(--azul-700);font-weight:700;}
+  table.rondas{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.8rem;
+  }
+  table.rondas th{
+    text-align:left;
+    color:var(--gris-600);
+    font-weight:600;
+    padding:5px 6px;
+    border-bottom:1px solid var(--gris-200);
+    font-size:.72rem;
+    text-transform:uppercase;
+  }
+  table.rondas td{
+    padding:6px 6px;
+    border-bottom:1px solid var(--gris-100);
+  }
+  .vacio{color:var(--gris-400);font-size:.8rem;font-style:italic;padding:6px 0;}
+
+  table.resumen-tabla-principal{ border:1px solid #d9d9d9; }
+  table.resumen-tabla-principal th{
+    background:#ffe600;
+    color:#1a1a1a;
+    font-weight:800;
+    text-align:center;
+    padding:8px 10px;
+    border:1px solid #d9d9d9;
+    text-transform:uppercase;
+    font-size:.72rem;
+    white-space:nowrap;
+  }
+  table.resumen-tabla-principal td{
+    text-align:center;
+    padding:7px 10px;
+    border:1px solid #eee;
+    font-size:.8rem;
+  }
+  table.resumen-tabla-principal tbody tr:nth-child(even) td{background:#f4f4f4;}
+
+  .checkbox-sumar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:12px;
+    font-size:.85rem;
+    color:var(--gris-800);
+    cursor:pointer;
+    user-select:none;
+  }
+  .checkbox-sumar input{width:auto;cursor:pointer;}
+  .top-fecha{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  /* Estadistica */
+  .filtros{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-bottom:14px;
+  }
+  @media(max-width:700px){.filtros{grid-template-columns:1fr 1fr;}}
+  .chart-wrap{position:relative;height:340px;}
+  .resumen-cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:14px;
+  }
+  @media(max-width:640px){.resumen-cards{grid-template-columns:1fr;}}
+  .mini-card{
+    background:var(--gris-100);
+    border-radius:8px;
+    padding:12px;
+    text-align:center;
+  }
+  .mini-card .num{font-size:1.4rem;font-weight:800;color:var(--azul-900);}
+  .mini-card .lbl{font-size:.72rem;color:var(--gris-600);text-transform:uppercase;letter-spacing:.3px;}
+  table.detalle{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px;}
+  table.detalle th{background:var(--gris-100);text-align:left;padding:8px;font-size:.72rem;text-transform:uppercase;color:var(--gris-600);}
+  table.detalle td{padding:8px;border-bottom:1px solid var(--gris-100);}
+  .pill{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:99px;
+    font-size:.74rem;
+    font-weight:700;
+  }
+  .pill.ok{background:var(--verde-bg);color:var(--verde);}
+  .pill.warn{background:var(--ambar-bg);color:var(--ambar);}
+  .pill.bad{background:var(--rojo-bg);color:var(--rojo);}
+  .caption{font-size:.74rem;color:var(--gris-600);margin-top:4px;}
+
+  /* Parametros: tabla dia por dia */
+  details.piazza-param{
+    border:1px solid var(--gris-200);
+    border-radius:var(--radio);
+    margin-bottom:10px;
+    overflow:hidden;
+    background:#fff;
+  }
+  details.piazza-param summary{
+    list-style:none;
+    cursor:pointer;
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--gris-100);
+    font-weight:700;
+    font-size:.9rem;
+    color:var(--azul-900);
+  }
+  details.piazza-param summary::-webkit-details-marker{display:none;}
+  details.piazza-param summary .flecha{transition:transform .15s;color:var(--gris-600);}
+  details.piazza-param[open] summary .flecha{transform:rotate(90deg);}
+  .guardado-flag{
+    font-size:.72rem;
+    color:var(--verde);
+    font-weight:600;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  .guardado-flag.show{opacity:1;}
+  .param-tabla-wrap{overflow-x:auto;padding:12px;}
+  table.param-tabla{
+    border-collapse:collapse;
+    width:100%;
+    min-width:760px;
+    font-size:.72rem;
+  }
+  table.param-tabla th{
+    background:var(--azul-900);
+    color:#fff;
+    padding:7px 5px;
+    text-align:center;
+    font-size:.66rem;
+    text-transform:uppercase;
+    letter-spacing:.2px;
+    white-space:nowrap;
+  }
+  table.param-tabla td{
+    border:1px solid var(--gris-200);
+    padding:5px 4px;
+    text-align:center;
+    vertical-align:middle;
+  }
+  table.param-tabla td.turno-lbl{
+    font-weight:700;
+    color:var(--azul-800);
+    background:var(--gris-100);
+    white-space:nowrap;
+  }
+  table.param-tabla td.total-cell{
+    background:var(--gris-100);
+    font-weight:700;
+    color:var(--azul-900);
+  }
+  .dia-select-pair{
+    display:flex;
+    gap:3px;
+    justify-content:center;
+  }
+  .dia-select-pair select{
+    padding:4px 2px;
+    font-size:.68rem;
+    border-radius:5px;
+    width:auto;
+  }
+  .dia-select-pair select.sel-h{min-width:44px;}
+  .dia-select-pair select.sel-m{min-width:50px;}
+
+  /* Exportar / Estadística nueva */
+  .acciones-exportar{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:10px 0 14px;
+  }
+  .chart-titulo{
+    text-align:center;
+    font-weight:800;
+    font-size:1rem;
+    color:var(--gris-800);
+    letter-spacing:.4px;
+    margin-bottom:6px;
+    text-transform:uppercase;
+  }
+  table.resumen-tabla{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.76rem;
+    margin:14px 0;
+  }
+  table.resumen-tabla th, table.resumen-tabla td{
+    border:1px solid var(--gris-200);
+    padding:6px 5px;
+    text-align:center;
+  }
+  table.resumen-tabla th{
+    background:var(--gris-100);
+    color:var(--gris-600);
+    font-weight:700;
+    text-transform:uppercase;
+    font-size:.68rem;
+  }
+  table.resumen-tabla td:first-child, table.resumen-tabla th:first-child{
+    text-align:left;
+    font-weight:700;
+    color:var(--azul-900);
+    background:var(--gris-100);
+  }
+
+  /* Acciones editar/eliminar en Historial */
+  .fila-acciones{
+    display:flex;
+    gap:4px;
+    justify-content:center;
+  }
+  .icon-btn{
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-size:.9rem;
+    padding:2px 5px;
+    border-radius:5px;
+    line-height:1;
+  }
+  .icon-btn:hover{background:var(--gris-100);}
+  .icon-btn.eliminar:hover{background:var(--rojo-bg);}
+
+  .reset-btn{
+    background:#fff;
+    border:1px solid var(--rojo);
+    color:var(--rojo);
+    font-size:.68rem;
+    padding:3px 9px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .reset-btn:hover{background:var(--rojo-bg);}
+  footer{
+    text-align:center;
+    font-size:.7rem;
+    color:var(--gris-400);
+    padding:20px 0 30px;
+  }
+  .banner-error{
+    max-width:980px;
+    margin:12px auto 0;
+    background:var(--rojo-bg);
+    color:var(--rojo);
+    border:1px solid var(--rojo);
+    border-radius:8px;
+    padding:12px 16px;
+    font-size:.85rem;
+    line-height:1.5;
+  }
+  .banner-error code{
+    background:rgba(198,40,40,.1);
+    padding:1px 5px;
+    border-radius:4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header>
+    <h1>Control de Rondas de Supervisores</h1>
+    <div class="sub">Krause Negocios · BUNKER</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="registro">Registro de Ronda</button>
+    <button class="tab-btn" data-tab="historial">Historial Rondas</button>
+    <button class="tab-btn" data-tab="estadistica">Estadística</button>
+    <button class="tab-btn" data-tab="parametros">Parámetros</button>
+    <button class="tab-btn" data-tab="resumen">Resumen</button>
+  </nav>
+</div>
+
+<div id="banner-firebase" class="banner-error" style="display:none;">
+  ⚠️ <b>Firebase no está configurado.</b> Reemplaza los valores de ejemplo (TU_API_KEY, TU_PROYECTO, etc.)
+  dentro de <code>firebaseConfig</code> en el código, con los datos reales de tu proyecto Firebase.
+  Mientras tanto, nada se guardará ni se cargará.
+</div>
+
+<main>
+
+  <!-- ================= PESTAÑA 1: REGISTRO ================= -->
+  <section id="panel-registro" class="panel active">
+    <div class="card">
+      <h2 id="r-titulo">Registrar nueva ronda</h2>
+      <div class="desc" id="r-desc">Completa los datos de la ronda supervisada. Se guardará automáticamente en el Historial.</div>
+
+      <label>Fecha</label>
+      <input type="date" id="r-fecha">
+
+      <div class="grid2">
+        <div>
+          <label>Piazza</label>
+          <select id="r-piazza">
+            <option value="">Selecciona...</option>
+            <option>Bosques</option>
+            <option>Ceibos</option>
+            <option>Ciudad Celeste</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Murano</option>
+            <option>Palmar</option>
+            <option>Samborondón</option>
+            <option>Villa Club</option>
+            <option>Villas del Rey</option>
+          </select>
+        </div>
+        <div>
+          <label>Turno</label>
+          <select id="r-turno">
+            <option value="">Selecciona...</option>
+            <option>Diurno</option>
+            <option>Nocturno</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Supervisor</label>
+      <select id="r-supervisor">
+        <option value="">Selecciona...</option>
+        <option>Myr. Patricio Rosas</option>
+        <option>Nicole Rosas</option>
+        <option>Sgto Caicedo</option>
+        <option>Sgto Cedeño</option>
+        <option>Moisés Palacios</option>
+        <option>Samuel Palacios</option>
+        <option value="__otro__">Otro (escribir)</option>
+      </select>
+      <input type="text" id="r-supervisor-otro" placeholder="Escribe el nombre del supervisor" style="display:none;margin-top:8px;">
+
+      <label>Operador <span style="text-transform:none;font-weight:400;color:var(--gris-400);">(quién ingresa este registro)</span></label>
+      <select id="r-operador">
+        <option value="">Selecciona...</option>
+        <option>Alan Quimis</option>
+        <option>Carlos Malo</option>
+        <option>Sebastián Tazán</option>
+        <option>Erick Cantos</option>
+        <option>Frank Dominguez</option>
+        <option>Ricardo Bohórquez</option>
+        <option value="__otro__">Otro (escribir)</option>
+      </select>
+      <input type="text" id="r-operador-otro" placeholder="Escribe el nombre del operador" style="display:none;margin-top:8px;">
+
+      <div class="grid2">
+        <div>
+          <label>Hora de ingreso</label>
+          <input type="time" id="r-ingreso">
+        </div>
+        <div>
+          <label>Hora de salida</label>
+          <input type="time" id="r-salida">
+        </div>
+      </div>
+
+      <div class="minutos-box">
+        <span>Tiempo de ronda calculado</span>
+        <b id="r-minutos-txt">—</b>
+      </div>
+
+      <button class="btn" id="r-guardar">Guardar ronda</button>
+      <button class="btn secundario" id="r-cancelar-edicion" style="display:none;">Cancelar edición</button>
+      <div class="msg" id="r-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Importar rondas desde Excel</h2>
+      <div class="desc">
+        ¿Tienes todo un mes ya registrado en una hoja de Excel? Súbela aquí y la app la carga automáticamente
+        al Historial, sin necesidad de escribir ronda por ronda. Acepta archivos <b>.xlsx</b> o <b>.csv</b>.
+        La app detecta automáticamente las columnas: <b>Fecha, Piazza, Supervisor, Turno, Hora Ingreso, Hora Salida</b>
+        (no importa el orden, ni si tienen mayúsculas/tildes distintas). Si tu Excel tiene también una columna
+        <b>Operador</b>, la detecta y la importa igual; si no la tiene, no pasa nada, ese campo queda vacío.
+        El <b>nombre del supervisor no necesita estar escrito exactamente igual</b> que en la lista de la app —
+        reconoce mayúsculas, tildes, espacios de más, e incluso solo el apellido (ej. "caicedo" → "Sgto Caicedo"),
+        y reconoce también los nombres reales de los sargentos (ej. "Larry Cedeño" → "Sgto Cedeño",
+        "Glider Caicedo" → "Sgto Caicedo"). Si no reconoce un nombre, lo importa tal cual lo escribiste
+        (como si fuera "Otro").
+      </div>
+      <input type="file" id="imp-file" accept=".xlsx,.xls,.csv">
+      <div class="msg" id="imp-msg-inicial"></div>
+
+      <div id="imp-preview-wrap" style="display:none;margin-top:14px;">
+        <div class="caption" id="imp-resumen" style="margin-bottom:8px;"></div>
+        <div style="max-height:320px;overflow:auto;border:1px solid var(--gris-200);border-radius:8px;">
+          <table class="rondas" id="imp-preview-tabla" style="width:100%;"></table>
+        </div>
+        <button class="btn" id="imp-confirmar" style="margin-top:12px;">Confirmar e importar todas las rondas válidas</button>
+        <button class="btn secundario" id="imp-cancelar" style="margin-top:8px;">Cancelar</button>
+        <div class="msg" id="imp-msg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PESTAÑA 2: HISTORIAL ================= -->
+  <section id="panel-historial" class="panel">
+    <div class="card">
+      <h2>Historial de Rondas</h2>
+      <div class="desc">Rondas agrupadas por fecha. Despliega un día para ver el detalle por turno, editar, eliminar o exportar.</div>
+      <div id="historial-lista"><div class="vacio">Cargando historial...</div></div>
+    </div>
+  </section>
+
+  <!-- ================= PESTAÑA 3: ESTADISTICA ================= -->
+  <section id="panel-estadistica" class="panel">
+    <div class="card">
+      <h2>Estadística de cumplimiento</h2>
+      <div class="desc">Compara lo rondado (Historial) contra la meta definida en Parámetros. 100% = meta cumplida.</div>
+
+      <div class="filtros">
+        <div>
+          <label>Periodo</label>
+          <select id="e-periodo">
+            <option value="mes">Mensual</option>
+            <option value="semana">Semanal</option>
+          </select>
+        </div>
+        <div id="e-mes-wrap">
+          <label>Mes</label>
+          <input type="month" id="e-mes">
+        </div>
+        <div id="e-semana-wrap" style="display:none;">
+          <label>Semana</label>
+          <input type="week" id="e-semana">
+        </div>
+        <div>
+          <label>Piazza</label>
+          <select id="e-piazza">
+            <option value="">Todas las piazzas</option>
+            <option>Bosques</option>
+            <option>Ceibos</option>
+            <option>Ciudad Celeste</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Murano</option>
+            <option>Palmar</option>
+            <option>Samborondón</option>
+            <option>Villa Club</option>
+            <option>Villas del Rey</option>
+          </select>
+        </div>
+        <div>
+          <label>Supervisor</label>
+          <select id="e-supervisor">
+            <option value="">Todos los supervisores</option>
+          </select>
+        </div>
+        <div>
+          <label>Modo</label>
+          <select id="e-modo">
+            <option value="total">Total (Diurno + Nocturno)</option>
+            <option value="Diurno">Solo Diurno</option>
+            <option value="Nocturno">Solo Nocturno</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="resumen-cards">
+        <div class="mini-card"><div class="num" id="e-cum-prom">—</div><div class="lbl">Cumplimiento promedio</div></div>
+        <div class="mini-card"><div class="num" id="e-total-real">—</div><div class="lbl">Tiempo rondado total</div></div>
+        <div class="mini-card"><div class="num" id="e-total-meta">—</div><div class="lbl">Meta total del periodo</div></div>
+      </div>
+      <div class="caption" id="e-caption-filtro"></div>
+
+      <div class="chart-titulo" id="e-chart-titulo">SUPERVISIÓN</div>
+      <div class="chart-wrap"><div id="e-chart-svg-wrap" style="width:100%;height:100%;"></div></div>
+
+      <table class="resumen-tabla" id="e-tabla-resumen">
+        <thead><tr id="e-resumen-head"></tr></thead>
+        <tbody id="e-resumen-body"></tbody>
+      </table>
+
+      <div class="acciones-exportar">
+        <button class="btn secundario chico" id="e-exportar-png">⭳ Exportar gráfico (PNG)</button>
+        <button class="btn secundario chico" id="e-exportar-csv">⭳ Exportar datos (CSV)</button>
+        <button class="btn secundario chico" id="e-exportar-pdf">⭳ Exportar PDF</button>
+      </div>
+
+      <table class="detalle" id="e-tabla">
+        <thead><tr><th>Piazza</th><th>Real</th><th>Meta</th><th>% Cumplimiento</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= PESTAÑA 4: PARAMETROS ================= -->
+  <section id="panel-parametros" class="panel">
+    <div class="card">
+      <h2>Parámetros de meta por Piazza</h2>
+      <div class="desc">
+        Para cada Piazza, escoge cuántas horas y minutos debe rondar el supervisor cada día de la semana, por turno
+        (Diurno / Nocturno). <b>Total a la semana</b> = suma de los 7 días (lunes a domingo). <b>Total al mes</b> =
+        ese total semanal × 30. Estos totales son los que se comparan contra lo registrado en la pestaña Estadística.
+        Cada Piazza tiene su propio botón para reiniciar (eliminar) su configuración.
+      </div>
+      <div class="acciones-exportar">
+        <button class="btn secundario chico" id="p-exportar-csv">⭳ Exportar todos los parámetros (CSV)</button>
+        <button class="btn secundario chico" id="p-exportar-pdf">⭳ Exportar todos los parámetros (PDF)</button>
+      </div>
+      <div id="parametros-lista"><div class="vacio">Cargando parámetros...</div></div>
+    </div>
+  </section>
+
+  <!-- ================= PESTAÑA 5: RESUMEN ================= -->
+  <section id="panel-resumen" class="panel">
+    <div class="card">
+      <h2>Resumen de Rondas</h2>
+      <div class="desc">
+        Escoge una Piazza y un mes para ver el listado completo de rondas registradas ese mes, ordenado por fecha.
+        Puedes además filtrar por Turno, Supervisor u Operador.
+      </div>
+
+      <div class="filtros">
+        <div>
+          <label>Piazza</label>
+          <select id="res-piazza">
+            <option value="">Selecciona...</option>
+            <option>Bosques</option>
+            <option>Ceibos</option>
+            <option>Ciudad Celeste</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Murano</option>
+            <option>Palmar</option>
+            <option>Samborondón</option>
+            <option>Villa Club</option>
+            <option>Villas del Rey</option>
+          </select>
+        </div>
+        <div>
+          <label>Mes</label>
+          <input type="month" id="res-mes">
+        </div>
+        <div>
+          <label>Turno</label>
+          <select id="res-turno">
+            <option value="">Todos los turnos</option>
+            <option>Diurno</option>
+            <option>Nocturno</option>
+          </select>
+        </div>
+        <div>
+          <label>Supervisor</label>
+          <select id="res-supervisor">
+            <option value="">Todos los supervisores</option>
+          </select>
+        </div>
+        <div>
+          <label>Operador</label>
+          <select id="res-operador">
+            <option value="">Todos los operadores</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="checkbox-sumar">
+        <input type="checkbox" id="res-sumar">
+        Sumar todas las rondas del mismo día en una sola fila
+      </label>
+
+      <div class="resumen-cards" style="margin-top:14px;">
+        <div class="mini-card"><div class="num" id="res-total-rondas">—</div><div class="lbl">Total de rondas</div></div>
+        <div class="mini-card"><div class="num" id="res-total-tiempo">—</div><div class="lbl">Tiempo total</div></div>
+        <div class="mini-card"><div class="num" id="res-total-diurno-nocturno">—</div><div class="lbl">Diurno / Nocturno</div></div>
+      </div>
+
+      <div class="acciones-exportar">
+        <button class="btn secundario chico" id="res-exportar-csv">⭳ Exportar CSV (esta Piazza)</button>
+        <button class="btn secundario chico" id="res-exportar-pdf">⭳ Exportar PDF (esta Piazza)</button>
+      </div>
+
+      <div class="acciones-exportar" style="margin-top:6px;padding-top:10px;border-top:1px dashed var(--gris-200);">
+        <span class="caption" style="width:100%;margin-bottom:4px;">Exportar el mes completo, con todas las Piazzas juntas (no depende de la Piazza escogida arriba):</span>
+        <button class="btn secundario chico" id="res-exportar-mes-csv">⭳ Exportar mes completo — Todas las Piazzas (CSV)</button>
+        <button class="btn secundario chico" id="res-exportar-mes-pdf">⭳ Exportar mes completo — Todas las Piazzas (PDF)</button>
+      </div>
+
+      <div style="overflow-x:auto;margin-top:12px;">
+        <table class="rondas resumen-tabla-principal" id="res-tabla" style="width:100%;"></table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Control de Rondas de Supervisores BUNKER · Datos almacenados en Firebase Firestore</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDocs, serverTimestamp, query, orderBy,
+  updateDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+/* ======================================================================
+   CONFIGURACIÓN DE FIREBASE
+   Reemplaza estos valores con los de tu proyecto Firebase (Firestore).
+   Puedes usar el mismo proyecto que ya usas para "Reporte del Personal
+   Krause" u otro dedicado — solo asegúrate de que Firestore esté habilitado.
+   Esta app usa las colecciones: "bunker_rondas" y "bunker_parametros",
+   así que no chocan con las colecciones de tus otras apps.
+====================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyB36bR8kLIVx8VXoXcpYOT5iZG55uJn-e0",
+  authDomain: "comportamiento-personal.firebaseapp.com",
+  projectId: "comportamiento-personal",
+  storageBucket: "comportamiento-personal.firebasestorage.app",
+  messagingSenderId: "749629998733",
+  appId: "1:749629998733:web:b6079a4b940779c23004c4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+if(firebaseConfig.apiKey === "TU_API_KEY" || firebaseConfig.projectId === "TU_PROYECTO"){
+  document.getElementById("banner-firebase").style.display = "block";
+}
+
+const RONDAS_COL = "bunker_rondas";
+const PARAM_COL = "bunker_parametros";
+
+const PIAZZAS = ["Bosques","Ceibos","Ciudad Celeste","FCG","La Joya","Murano","Palmar","Samborondón","Villa Club","Villas del Rey"];
+const SIGLAS = {
+  "Bosques":"BC", "Ceibos":"CB", "Ciudad Celeste":"CC", "FCG":"FCG", "La Joya":"JY",
+  "Murano":"MU", "Palmar":"PM", "Samborondón":"SB", "Villa Club":"VC", "Villas del Rey":"VR"
+};
+const SIGLA_A_PIAZZA = {};
+Object.entries(SIGLAS).forEach(([nombre,sigla])=> SIGLA_A_PIAZZA[sigla.toUpperCase()] = nombre);
+
+const SUPERVISORES_CONOCIDOS = [
+  "Myr. Patricio Rosas", "Nicole Rosas", "Sgto Caicedo", "Sgto Cedeño",
+  "Moisés Palacios", "Samuel Palacios"
+];
+
+// Alias de nombres reales (nombre de pila + apellido) que el Excel puede traer,
+// mapeados al nombre canónico que usa la app para ese mismo supervisor.
+const ALIAS_SUPERVISOR = {
+  "larry cedeno": "Sgto Cedeño",
+  "glider caicedo": "Sgto Caicedo"
+};
+
+// Declaradas aquí (antes del listener en tiempo real de Firestore) para que
+// nunca queden en "temporal dead zone" sin importar cuándo llegue el primer snapshot.
+let PARAMETROS = {}; // { piazza: { diurno:{lunes..domingo en minutos}, nocturno:{...} } }
+
+/* ---------------------------- TABS ---------------------------- */
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+
+    // Refresca Estadística al entrar a la pestaña (por si cambiaron datos mientras tanto).
+    if(btn.dataset.tab === "estadistica" && typeof renderEstadistica === "function"){
+      renderEstadistica();
+    }
+    if(btn.dataset.tab === "resumen" && typeof renderResumen === "function"){
+      renderResumen();
+    }
+  });
+});
+
+/* ---------------------------- HELPERS DE FECHA ---------------------------- */
+const DIAS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+function parseFechaLocal(fechaStr){
+  // fechaStr = "YYYY-MM-DD" -> Date en horario local (evita corrimiento UTC)
+  const [y,m,d] = fechaStr.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+function fechaBonita(fechaStr){
+  const dt = parseFechaLocal(fechaStr);
+  return `${DIAS[dt.getDay()]} ${dt.getDate()} de ${MESES[dt.getMonth()]} del ${dt.getFullYear()}`;
+}
+function esFinDeSemana(fechaStr){
+  const dt = parseFechaLocal(fechaStr);
+  const dia = dt.getDay();
+  return dia===0 || dia===6;
+}
+function minAHoras(min){
+  const h = Math.floor(min/60);
+  const m = min%60;
+  if(h===0) return `${m} min`;
+  if(m===0) return `${h} h`;
+  return `${h} h ${m} min`;
+}
+
+/* ---------------------------- CALCULO DE MINUTOS ---------------------------- */
+function calcMinutos(ingreso, salida){
+  if(!ingreso || !salida) return null;
+  const [h1,m1] = ingreso.split(":").map(Number);
+  const [h2,m2] = salida.split(":").map(Number);
+  let start = h1*60+m1;
+  let end = h2*60+m2;
+  let diff = end - start;
+  if(diff <= 0) diff += 24*60; // cruza medianoche o es igual
+  return diff;
+}
+
+/* ===================================================================
+   IMPORTAR DESDE EXCEL/CSV (detección flexible de columnas y formatos)
+=================================================================== */
+function normalizarTexto(str){
+  return String(str||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+}
+
+function encontrarColumna(headers, candidatos){
+  const normalizados = headers.map(h=>normalizarTexto(h));
+  for(const cand of candidatos){
+    const idx = normalizados.indexOf(normalizarTexto(cand));
+    if(idx !== -1) return idx;
+  }
+  for(const cand of candidatos){
+    const idx = normalizados.findIndex(h=>h.includes(normalizarTexto(cand)));
+    if(idx !== -1) return idx;
+  }
+  return -1;
+}
+
+function excelSerialAFecha(serial){
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400;
+  const date_info = new Date(utc_value * 1000);
+  return new Date(date_info.getUTCFullYear(), date_info.getUTCMonth(), date_info.getUTCDate());
+}
+
+function parsearFechaCelda(valor){
+  if(valor instanceof Date){
+    return `${valor.getFullYear()}-${String(valor.getMonth()+1).padStart(2,"0")}-${String(valor.getDate()).padStart(2,"0")}`;
+  }
+  if(typeof valor === "number"){
+    const d = excelSerialAFecha(valor);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+  const str = String(valor||"").trim();
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+  return null;
+}
+
+function parsearHoraCelda(valor){
+  if(typeof valor === "number"){
+    const totalMin = Math.round(valor * 24 * 60);
+    const h = Math.floor(totalMin/60) % 24;
+    const m = totalMin % 60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+  }
+  if(valor instanceof Date){
+    return `${String(valor.getHours()).padStart(2,"0")}:${String(valor.getMinutes()).padStart(2,"0")}`;
+  }
+  const str = String(valor||"").trim();
+  const m = str.match(/^(\d{1,2}):(\d{2})/);
+  if(m) return `${String(m[1]).padStart(2,"0")}:${m[2]}`;
+  return null;
+}
+
+function normalizarPiazzaImportada(valor){
+  const str = String(valor||"").trim();
+  if(!str) return "";
+  const strUpper = str.toUpperCase();
+  // 1) sigla exacta (ej. "JY" -> "La Joya")
+  if(SIGLA_A_PIAZZA[strUpper]) return SIGLA_A_PIAZZA[strUpper];
+  // 2) nombre completo exacto (ignorando mayusculas/tildes/espacios)
+  const exacto = PIAZZAS.find(p => normalizarTexto(p) === normalizarTexto(str));
+  if(exacto) return exacto;
+  // 3) coincidencia parcial (ej. "JOYA" -> "La Joya", "CLUB" -> "Villa Club", "CELESTE" -> "Ciudad Celeste")
+  const parcial = PIAZZAS.find(p => normalizarTexto(p).includes(normalizarTexto(str)) || normalizarTexto(str).includes(normalizarTexto(p)));
+  if(parcial) return parcial;
+  // 4) sin coincidencia: se deja tal cual (se marcará para revisión)
+  return str;
+}
+
+function normalizarSupervisorImportado(valor){
+  const str = String(valor||"").trim();
+  if(!str) return "";
+  // 0) alias de nombre real conocido (ej. "Larry Cedeño" -> "Sgto Cedeño")
+  const alias = ALIAS_SUPERVISOR[normalizarTexto(str)];
+  if(alias) return alias;
+  // 1) coincidencia exacta ignorando mayusculas/tildes/espacios extra
+  const match = SUPERVISORES_CONOCIDOS.find(s => normalizarTexto(s) === normalizarTexto(str));
+  if(match) return match;
+  // 2) coincidencia parcial (por si escriben solo el apellido, ej. "caicedo" -> "Sgto Caicedo")
+  const parcial = SUPERVISORES_CONOCIDOS.find(s => normalizarTexto(s).includes(normalizarTexto(str)) || normalizarTexto(str).includes(normalizarTexto(s)));
+  if(parcial) return parcial;
+  // 3) sin coincidencia: se deja tal cual como estaba escrito en el Excel (equivalente a "Otro")
+  return str;
+}
+
+function normalizarTurnoImportado(valor){
+  const n = normalizarTexto(valor);
+  if(n.startsWith("d")) return "Diurno";
+  if(n.startsWith("n")) return "Nocturno";
+  return String(valor||"").trim();
+}
+
+function parsearArchivoImportacion(workbook){
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  const filas = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:""});
+  if(filas.length < 2) return {error:"El archivo no tiene datos (solo encabezados o está vacío)."};
+
+  const headers = filas[0];
+  const idxFecha = encontrarColumna(headers, ["fecha"]);
+  const idxPiazza = encontrarColumna(headers, ["piazza","plaza"]);
+  const idxSupervisor = encontrarColumna(headers, ["supervisor"]);
+  const idxOperador = encontrarColumna(headers, ["operador","operator"]); // opcional, no bloquea si falta
+  const idxTurno = encontrarColumna(headers, ["turno"]);
+  const idxIngreso = encontrarColumna(headers, ["hora ingreso","hora de ingreso","ingreso"]);
+  const idxSalida = encontrarColumna(headers, ["hora salida","hora de salida","salida"]);
+
+  const faltantes = [];
+  if(idxFecha===-1) faltantes.push("Fecha");
+  if(idxPiazza===-1) faltantes.push("Piazza");
+  if(idxSupervisor===-1) faltantes.push("Supervisor");
+  if(idxTurno===-1) faltantes.push("Turno");
+  if(idxIngreso===-1) faltantes.push("Hora Ingreso");
+  if(idxSalida===-1) faltantes.push("Hora Salida");
+  if(faltantes.length){
+    return {error:`No se encontraron estas columnas en el archivo: ${faltantes.join(", ")}. Revisa los encabezados de tu hoja.`};
+  }
+
+  const registros = [];
+  for(let i=1;i<filas.length;i++){
+    const fila = filas[i];
+    if(!fila || fila.every(c=>c==="")) continue;
+    const fecha = parsearFechaCelda(fila[idxFecha]);
+    const piazza = normalizarPiazzaImportada(fila[idxPiazza]);
+    const supervisor = normalizarSupervisorImportado(fila[idxSupervisor]);
+    const operador = idxOperador!==-1 ? String(fila[idxOperador]||"").trim() : "";
+    const turno = normalizarTurnoImportado(fila[idxTurno]);
+    const ingreso = parsearHoraCelda(fila[idxIngreso]);
+    const salida = parsearHoraCelda(fila[idxSalida]);
+
+    // fila "fantasma" (formato aplicado a toda la columna en Excel, sin datos reales) -> se ignora
+    if(!fecha && !piazza && !supervisor && !turno && !ingreso && !salida) continue;
+
+    const minutos = calcMinutos(ingreso, salida);
+    const valido = Boolean(fecha && piazza && PIAZZAS.includes(piazza) && supervisor &&
+      (turno==="Diurno"||turno==="Nocturno") && ingreso && salida);
+    let motivo = "";
+    if(!valido){
+      const problemas = [];
+      if(!fecha) problemas.push("fecha inválida");
+      if(!piazza || !PIAZZAS.includes(piazza)) problemas.push("piazza no reconocida");
+      if(!supervisor) problemas.push("supervisor vacío");
+      if(!(turno==="Diurno"||turno==="Nocturno")) problemas.push("turno no reconocido");
+      if(!ingreso) problemas.push("hora ingreso inválida");
+      if(!salida) problemas.push("hora salida inválida");
+      motivo = problemas.join(", ");
+    }
+    registros.push({filaExcel:i+1, fecha, piazza, supervisor, operador, turno, ingreso, salida, minutos, valido, motivo});
+  }
+  return {registros};
+}
+
+/* ===================================================================
+   PESTAÑA 1: REGISTRO
+=================================================================== */
+const supSel = document.getElementById("r-supervisor");
+const supOtro = document.getElementById("r-supervisor-otro");
+supSel.addEventListener("change", ()=>{
+  supOtro.style.display = supSel.value === "__otro__" ? "block" : "none";
+});
+
+const opSel = document.getElementById("r-operador");
+const opOtro = document.getElementById("r-operador-otro");
+opSel.addEventListener("change", ()=>{
+  opOtro.style.display = opSel.value === "__otro__" ? "block" : "none";
+});
+
+const ingresoEl = document.getElementById("r-ingreso");
+const salidaEl = document.getElementById("r-salida");
+const minTxt = document.getElementById("r-minutos-txt");
+
+function actualizarMinutosPreview(){
+  const min = calcMinutos(ingresoEl.value, salidaEl.value);
+  minTxt.textContent = min===null ? "—" : minAHoras(min);
+}
+ingresoEl.addEventListener("change", actualizarMinutosPreview);
+salidaEl.addEventListener("change", actualizarMinutosPreview);
+
+// fecha por defecto: hoy
+document.getElementById("r-fecha").value = new Date().toISOString().slice(0,10);
+
+let EDITANDO_ID = null; // si tiene valor, "Guardar" actualiza esa ronda en vez de crear una nueva
+
+function limpiarFormularioRegistro(){
+  document.getElementById("r-fecha").value = new Date().toISOString().slice(0,10);
+  document.getElementById("r-piazza").value = "";
+  supSel.value = "";
+  supOtro.value = "";
+  supOtro.style.display = "none";
+  document.getElementById("r-operador").value = "";
+  opOtro.value = "";
+  opOtro.style.display = "none";
+  document.getElementById("r-turno").value = "";
+  ingresoEl.value = "";
+  salidaEl.value = "";
+  minTxt.textContent = "—";
+}
+
+function entrarModoEdicion(ronda){
+  EDITANDO_ID = ronda.id;
+  document.getElementById("r-titulo").textContent = "Editar ronda";
+  document.getElementById("r-desc").textContent = "Modifica los datos y guarda los cambios. Se actualizará en el Historial.";
+  document.getElementById("r-guardar").textContent = "Guardar cambios";
+  document.getElementById("r-cancelar-edicion").style.display = "block";
+
+  document.getElementById("r-fecha").value = ronda.fecha;
+  document.getElementById("r-piazza").value = ronda.piazza;
+  document.getElementById("r-turno").value = ronda.turno;
+
+  const opcionesSup = Array.from(supSel.options).map(o=>o.value);
+  if(opcionesSup.includes(ronda.supervisor)){
+    supSel.value = ronda.supervisor;
+    supOtro.style.display = "none";
+  }else{
+    supSel.value = "__otro__";
+    supOtro.value = ronda.supervisor;
+    supOtro.style.display = "block";
+  }
+
+  const opcionesOp = Array.from(opSel.options).map(o=>o.value);
+  const operadorRonda = ronda.operador || "";
+  if(operadorRonda && opcionesOp.includes(operadorRonda)){
+    opSel.value = operadorRonda;
+    opOtro.style.display = "none";
+    opOtro.value = "";
+  }else if(operadorRonda){
+    opSel.value = "__otro__";
+    opOtro.value = operadorRonda;
+    opOtro.style.display = "block";
+  }else{
+    opSel.value = "";
+    opOtro.value = "";
+    opOtro.style.display = "none";
+  }
+
+  ingresoEl.value = ronda.ingreso;
+  salidaEl.value = ronda.salida;
+  actualizarMinutosPreview();
+
+  // cambiar a la pestaña de Registro
+  document.querySelector('.tab-btn[data-tab="registro"]').click();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function salirModoEdicion(){
+  EDITANDO_ID = null;
+  document.getElementById("r-titulo").textContent = "Registrar nueva ronda";
+  document.getElementById("r-desc").textContent = "Completa los datos de la ronda supervisada. Se guardará automáticamente en el Historial.";
+  document.getElementById("r-guardar").textContent = "Guardar ronda";
+  document.getElementById("r-cancelar-edicion").style.display = "none";
+  limpiarFormularioRegistro();
+}
+
+document.getElementById("r-cancelar-edicion").addEventListener("click", salirModoEdicion);
+
+document.getElementById("r-guardar").addEventListener("click", async ()=>{
+  const msg = document.getElementById("r-msg");
+  msg.className = "msg";
+
+  const bannerFirebase = document.getElementById("banner-firebase");
+  if(bannerFirebase.style.display !== "none"){
+    msg.classList.add("err");
+    msg.textContent = "No se puede guardar: falta configurar Firebase (ver aviso rojo arriba de la pantalla).";
+    msg.scrollIntoView({behavior:"smooth", block:"nearest"});
+    return;
+  }
+
+  const fecha = document.getElementById("r-fecha").value;
+  const piazza = document.getElementById("r-piazza").value;
+  const turno = document.getElementById("r-turno").value;
+  let supervisor = supSel.value;
+  if(supervisor === "__otro__") supervisor = supOtro.value.trim();
+  let operador = opSel.value;
+  if(operador === "__otro__") operador = opOtro.value.trim();
+  const ingreso = ingresoEl.value;
+  const salida = salidaEl.value;
+  const minutos = calcMinutos(ingreso, salida);
+
+  if(!fecha || !piazza || !turno || !supervisor || !ingreso || !salida){
+    msg.classList.add("err");
+    msg.textContent = "Completa todos los campos antes de guardar.";
+    msg.scrollIntoView({behavior:"smooth", block:"nearest"});
+    return;
+  }
+
+  const datos = { fecha, piazza, turno, supervisor, operador, ingreso, salida, minutos };
+
+  const btn = document.getElementById("r-guardar");
+  btn.disabled = true;
+  btn.textContent = "Guardando...";
+
+  try{
+    if(EDITANDO_ID){
+      await updateDoc(doc(db, RONDAS_COL, EDITANDO_ID), datos);
+      msg.classList.add("ok");
+      msg.textContent = "Ronda actualizada correctamente.";
+      salirModoEdicion();
+    }else{
+      await addDoc(collection(db, RONDAS_COL), { ...datos, creadoEn: serverTimestamp() });
+      msg.classList.add("ok");
+      msg.textContent = "Ronda guardada correctamente.";
+      limpiarFormularioRegistro();
+    }
+  }catch(e){
+    console.error("Error al guardar ronda:", e);
+    msg.classList.add("err");
+    msg.textContent = "Error al guardar: " + e.message + " (revisa la configuración de Firebase o las reglas de seguridad de Firestore).";
+  }finally{
+    btn.disabled = false;
+    btn.textContent = EDITANDO_ID ? "Guardar cambios" : "Guardar ronda";
+    msg.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+});
+
+/* ===================================================================
+   IMPORTAR DESDE EXCEL/CSV: UI (leer archivo, previsualizar, confirmar)
+=================================================================== */
+let REGISTROS_IMPORTAR = []; // cache de la ultima previsualizacion
+
+document.getElementById("imp-file").addEventListener("change", (ev)=>{
+  const file = ev.target.files[0];
+  const msgInicial = document.getElementById("imp-msg-inicial");
+  msgInicial.className = "msg";
+  document.getElementById("imp-preview-wrap").style.display = "none";
+  if(!file) return;
+
+  if(typeof XLSX === "undefined"){
+    msgInicial.classList.add("err");
+    msgInicial.textContent = "No se pudo cargar la librería para leer Excel. Revisa tu conexión e intenta de nuevo.";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type:"array", cellDates:true});
+      const resultado = parsearArchivoImportacion(workbook);
+      if(resultado.error){
+        msgInicial.classList.add("err");
+        msgInicial.textContent = resultado.error;
+        return;
+      }
+      REGISTROS_IMPORTAR = resultado.registros;
+      mostrarPreviewImportacion();
+    }catch(err){
+      console.error("Error al leer el archivo:", err);
+      msgInicial.classList.add("err");
+      msgInicial.textContent = "No se pudo leer el archivo. Verifica que sea un .xlsx, .xls o .csv válido.";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function mostrarPreviewImportacion(){
+  const validos = REGISTROS_IMPORTAR.filter(r=>r.valido);
+  const invalidos = REGISTROS_IMPORTAR.filter(r=>!r.valido);
+
+  document.getElementById("imp-resumen").textContent =
+    `${REGISTROS_IMPORTAR.length} fila(s) leídas: ${validos.length} lista(s) para importar, ${invalidos.length} con problemas (se muestran resaltadas y no se importarán).`;
+
+  const tabla = document.getElementById("imp-preview-tabla");
+  tabla.innerHTML = `
+    <thead><tr><th>Fila</th><th>Fecha</th><th>Piazza</th><th>Supervisor</th><th>Operador</th><th>Turno</th><th>Ingreso</th><th>Salida</th><th>Tiempo</th><th>Estado</th></tr></thead>
+    <tbody>
+      ${REGISTROS_IMPORTAR.map(r=>`
+        <tr style="${r.valido?"":"background:var(--rojo-bg);"}">
+          <td>${r.filaExcel}</td>
+          <td>${r.fecha||"—"}</td>
+          <td>${r.piazza||"—"}</td>
+          <td>${r.supervisor||"—"}</td>
+          <td>${r.operador||"—"}</td>
+          <td>${r.turno||"—"}</td>
+          <td>${r.ingreso||"—"}</td>
+          <td>${r.salida||"—"}</td>
+          <td>${r.minutos!=null?minAHoras(r.minutos):"—"}</td>
+          <td>${r.valido ? `<span class="pill ok">Válido</span>` : `<span class="pill bad" title="${r.motivo}">Revisar</span>`}</td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+
+  document.getElementById("imp-preview-wrap").style.display = "block";
+  document.getElementById("imp-msg").className = "msg";
+}
+
+document.getElementById("imp-cancelar").addEventListener("click", ()=>{
+  REGISTROS_IMPORTAR = [];
+  document.getElementById("imp-preview-wrap").style.display = "none";
+  document.getElementById("imp-file").value = "";
+});
+
+document.getElementById("imp-confirmar").addEventListener("click", async ()=>{
+  const msg = document.getElementById("imp-msg");
+  msg.className = "msg";
+
+  const bannerFirebase = document.getElementById("banner-firebase");
+  if(bannerFirebase.style.display !== "none"){
+    msg.classList.add("err");
+    msg.textContent = "No se puede importar: falta configurar Firebase (ver aviso rojo arriba de la pantalla).";
+    return;
+  }
+
+  const validos = REGISTROS_IMPORTAR.filter(r=>r.valido);
+  if(validos.length === 0){
+    msg.classList.add("err");
+    msg.textContent = "No hay filas válidas para importar.";
+    return;
+  }
+
+  const btn = document.getElementById("imp-confirmar");
+  btn.disabled = true;
+
+  let exitosas = 0, fallidas = 0;
+  for(let i=0;i<validos.length;i++){
+    const r = validos[i];
+    btn.textContent = `Importando ${i+1} de ${validos.length}...`;
+    try{
+      await addDoc(collection(db, RONDAS_COL), {
+        fecha:r.fecha, piazza:r.piazza, turno:r.turno, supervisor:r.supervisor, operador:r.operador||"",
+        ingreso:r.ingreso, salida:r.salida, minutos:r.minutos,
+        creadoEn: serverTimestamp()
+      });
+      exitosas++;
+    }catch(e){
+      console.error("Error al importar fila", r.filaExcel, e);
+      fallidas++;
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Confirmar e importar todas las rondas válidas";
+
+  if(fallidas === 0){
+    msg.classList.add("ok");
+    msg.textContent = `¡Listo! Se importaron ${exitosas} ronda(s) correctamente al Historial.`;
+  }else{
+    msg.classList.add("err");
+    msg.textContent = `Se importaron ${exitosas} ronda(s), pero ${fallidas} fallaron (revisa tu conexión e intenta de nuevo con las que faltan).`;
+  }
+
+  REGISTROS_IMPORTAR = [];
+  document.getElementById("imp-file").value = "";
+  setTimeout(()=>{ document.getElementById("imp-preview-wrap").style.display = "none"; }, 4000);
+});
+
+
+/* ===================================================================
+   DATOS EN VIVO: escuchamos toda la colección de rondas una sola vez
+   y la usamos tanto para Historial como para Estadística.
+=================================================================== */
+let RONDAS = []; // cache local en memoria, se actualiza en tiempo real
+
+function renderTodo(){
+  renderHistorial();
+  poblarSupervisoresEstadistica();
+  renderEstadistica();
+  if(typeof renderResumen === "function") renderResumen();
+}
+
+const qRondas = query(collection(db, RONDAS_COL), orderBy("fecha","desc"));
+onSnapshot(qRondas, snap=>{
+  RONDAS = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderTodo();
+}, err=>{
+  document.getElementById("historial-lista").innerHTML =
+    `<div class="vacio">No se pudo conectar a Firestore. Revisa la configuración de Firebase en el código. (${err.message})</div>`;
+});
+
+/* ===================================================================
+   PESTAÑA 2: HISTORIAL
+=================================================================== */
+function renderHistorial(){
+  const cont = document.getElementById("historial-lista");
+  if(RONDAS.length===0){
+    cont.innerHTML = `<div class="vacio">Todavía no hay rondas registradas.</div>`;
+    return;
+  }
+
+  // agrupar por mes (YYYY-MM), manteniendo el mes mas reciente primero
+  const porMes = {};
+  RONDAS.forEach(r=>{
+    const mesKey = (r.fecha||"").slice(0,7);
+    if(!porMes[mesKey]) porMes[mesKey] = [];
+    porMes[mesKey].push(r);
+  });
+  const meses = Object.keys(porMes).sort((a,b)=> b.localeCompare(a));
+
+  // lookup para que los botones de exportar (por Piazza+Día) encuentren exactamente sus registros
+  const porFechaPiazza = {};
+  RONDAS.forEach(r=>{
+    const clave = `${r.fecha}|${r.piazza}`;
+    if(!porFechaPiazza[clave]) porFechaPiazza[clave] = [];
+    porFechaPiazza[clave].push(r);
+  });
+
+  function tablaTurno(lista){
+    if(lista.length===0) return `<div class="vacio">Sin rondas registradas.</div>`;
+    return `<table class="rondas">
+      <thead><tr><th>Supervisor</th><th>Operador</th><th>Ingreso</th><th>Salida</th><th>Tiempo</th><th>Acciones</th></tr></thead>
+      <tbody>
+        ${lista.map(r=>`<tr data-id="${r.id}">
+          <td>${r.supervisor}</td>
+          <td>${r.operador || "—"}</td>
+          <td>${r.ingreso}</td>
+          <td>${r.salida}</td>
+          <td>${minAHoras(r.minutos||0)}</td>
+          <td>
+            <div class="fila-acciones">
+              <button class="icon-btn editar" title="Editar" data-id="${r.id}">✏️</button>
+              <button class="icon-btn eliminar" title="Eliminar" data-id="${r.id}">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+
+  function nombreMes(mesKey){
+    if(!mesKey || !mesKey.includes("-")) return mesKey || "Sin fecha";
+    const [yearStr, monthStr] = mesKey.split("-");
+    const nombre = MESES[Number(monthStr)-1] || "";
+    return `${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} ${yearStr}`;
+  }
+
+  function piazzasPresentes(registros){
+    const delSet = PIAZZAS.filter(p => registros.some(r=>r.piazza===p));
+    const extra = Array.from(new Set(registros.map(r=>r.piazza))).filter(p=>!PIAZZAS.includes(p));
+    return [...delSet, ...extra];
+  }
+
+  cont.innerHTML = meses.map(mesKey=>{
+    const registrosMes = porMes[mesKey];
+    const totalMes = registrosMes.reduce((s,r)=>s+(r.minutos||0),0);
+    const piazzasDelMes = piazzasPresentes(registrosMes);
+
+    // --- resumen rapido del mes por Piazza (Diurno + Nocturno + total) ---
+    const filasResumenMes = piazzasDelMes.map(piazza=>{
+      const registrosPiazzaMes = registrosMes.filter(r=>r.piazza===piazza);
+      const diurnoMes = registrosPiazzaMes.filter(r=>r.turno==="Diurno").reduce((s,r)=>s+(r.minutos||0),0);
+      const nocturnoMes = registrosPiazzaMes.filter(r=>r.turno==="Nocturno").reduce((s,r)=>s+(r.minutos||0),0);
+      return `<tr>
+        <td>${piazza}</td>
+        <td>${minAHoras(diurnoMes)}</td>
+        <td>${minAHoras(nocturnoMes)}</td>
+        <td><b>${minAHoras(diurnoMes+nocturnoMes)}</b></td>
+      </tr>`;
+    }).join("");
+
+    const resumenMesHTML = `<div class="resumen-mes-wrap">
+      <h4 class="resumen-mes-titulo">Supervisión de ${nombreMes(mesKey)} por Piazza</h4>
+      <table class="resumen-mes-tabla">
+        <thead><tr><th>Piazza</th><th>Diurno</th><th>Nocturno</th><th>Total del mes</th></tr></thead>
+        <tbody>${filasResumenMes}</tbody>
+      </table>
+    </div>`;
+
+    // --- Piazza > Día > Turno ---
+    const bloquesPiazza = piazzasDelMes.map(piazza=>{
+      const registrosPiazzaMes = registrosMes.filter(r=>r.piazza===piazza);
+      const totalPiazzaMes = registrosPiazzaMes.reduce((s,r)=>s+(r.minutos||0),0);
+
+      const fechasDeLaPiazza = Array.from(new Set(registrosPiazzaMes.map(r=>r.fecha))).sort((a,b)=> b.localeCompare(a));
+
+      const bloquesDia = fechasDeLaPiazza.map(fecha=>{
+        const registrosDia = registrosPiazzaMes.filter(r=>r.fecha===fecha);
+        const diurnos = registrosDia.filter(r=>r.turno==="Diurno");
+        const nocturnos = registrosDia.filter(r=>r.turno==="Nocturno");
+        const totalDiurno = diurnos.reduce((s,r)=>s+(r.minutos||0),0);
+        const totalNocturno = nocturnos.reduce((s,r)=>s+(r.minutos||0),0);
+        const totalDia = totalDiurno + totalNocturno;
+
+        return `<details class="dia" data-fecha="${fecha}" data-piazza="${piazza}">
+          <summary>
+            <span>${fechaBonita(fecha)}</span>
+            <span class="total">${minAHoras(totalDia)}</span>
+          </summary>
+          <div class="dia-body">
+            <div class="top-fecha">
+              <span class="caption">${registrosDia.length} ronda(s) registrada(s) este día en ${piazza}</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn secundario chico exportar-dia" data-fecha="${fecha}" data-piazza="${piazza}">⭳ Exportar día (CSV)</button>
+                <button class="btn secundario chico exportar-dia-pdf" data-fecha="${fecha}" data-piazza="${piazza}">⭳ Exportar día (PDF)</button>
+              </div>
+            </div>
+            <div class="turno-bloque">
+              <h4>Diurno <span class="total">${minAHoras(totalDiurno)}</span></h4>
+              ${tablaTurno(diurnos)}
+            </div>
+            <div class="turno-bloque">
+              <h4>Nocturno <span class="total">${minAHoras(totalNocturno)}</span></h4>
+              ${tablaTurno(nocturnos)}
+            </div>
+          </div>
+        </details>`;
+      }).join("");
+
+      return `<details class="piazza-mes" data-piazza="${piazza}">
+        <summary>
+          <span>${piazza}</span>
+          <span class="total">${minAHoras(totalPiazzaMes)}</span>
+        </summary>
+        <div class="piazza-mes-body">
+          ${bloquesDia}
+        </div>
+      </details>`;
+    }).join("");
+
+    return `<details class="mes-bloque" data-mes="${mesKey}">
+      <summary>
+        <span>${nombreMes(mesKey)}</span>
+        <span class="total">${minAHoras(totalMes)}</span>
+      </summary>
+      <div class="mes-body">
+        ${resumenMesHTML}
+        ${bloquesPiazza}
+      </div>
+    </details>`;
+  }).join("");
+
+  cont.querySelectorAll(".exportar-dia").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.preventDefault();
+      const clave = `${btn.dataset.fecha}|${btn.dataset.piazza}`;
+      exportarDia(btn.dataset.fecha, porFechaPiazza[clave]||[], btn.dataset.piazza);
+    });
+  });
+
+  cont.querySelectorAll(".exportar-dia-pdf").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.preventDefault();
+      const clave = `${btn.dataset.fecha}|${btn.dataset.piazza}`;
+      exportarDiaPDF(btn.dataset.fecha, porFechaPiazza[clave]||[], btn.dataset.piazza);
+    });
+  });
+
+  cont.querySelectorAll(".icon-btn.editar").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.preventDefault();
+      const ronda = RONDAS.find(r=>r.id===btn.dataset.id);
+      if(ronda) entrarModoEdicion(ronda);
+    });
+  });
+
+  cont.querySelectorAll(".icon-btn.eliminar").forEach(btn=>{
+    btn.addEventListener("click", async (ev)=>{
+      ev.preventDefault();
+      const ronda = RONDAS.find(r=>r.id===btn.dataset.id);
+      if(!ronda) return;
+      const ok = confirm(`¿Eliminar la ronda de ${ronda.piazza} (${ronda.supervisor}, ${ronda.ingreso}-${ronda.salida}) del ${fechaBonita(ronda.fecha)}?`);
+      if(!ok) return;
+      try{
+        await deleteDoc(doc(db, RONDAS_COL, ronda.id));
+      }catch(e){
+        alert("Error al eliminar: " + e.message);
+      }
+    });
+  });
+}
+
+function exportarDia(fecha, registros, piazza){
+  const encabezado = ["Fecha","Piazza","Supervisor","Operador","Turno","Ingreso","Salida","Minutos"];
+  const filas = registros.map(r=>[r.fecha,r.piazza,r.supervisor,r.operador||"",r.turno,r.ingreso,r.salida,r.minutos]);
+  const csv = [encabezado, ...filas].map(fila=>fila.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const sufijoPiazza = piazza ? "_" + piazza.replace(/\s+/g,"") : "";
+  a.download = `rondas${sufijoPiazza}_${fecha}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---- Helper compartido para jsPDF (misma librería usada en las otras apps de Krause) ---- */
+function obtenerJsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
+  return null;
+}
+
+function exportarDiaPDF(fecha, registros, piazza){
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+
+  const diurnos = registros.filter(r=>r.turno==="Diurno");
+  const nocturnos = registros.filter(r=>r.turno==="Nocturno");
+  const totalDiurno = diurnos.reduce((s,r)=>s+(r.minutos||0),0);
+  const totalNocturno = nocturnos.reduce((s,r)=>s+(r.minutos||0),0);
+
+  const docPDF = new JsPDF();
+  docPDF.setFontSize(14);
+  docPDF.text(`Rondas del ${fechaBonita(fecha)}${piazza ? " — " + piazza : ""}`, 14, 16);
+  docPDF.setFontSize(10);
+  docPDF.setTextColor(90,100,110);
+  docPDF.text("Control de Rondas de Supervisores BUNKER · Krause Negocios", 14, 22);
+
+  let y = 30;
+  docPDF.setTextColor(20,30,40);
+  docPDF.setFontSize(11);
+  docPDF.text(`Diurno — total: ${minAHoras(totalDiurno)}`, 14, y);
+  y += 4;
+  docPDF.autoTable({
+    startY: y,
+    head: [["Piazza","Supervisor","Operador","Ingreso","Salida","Tiempo"]],
+    body: diurnos.length ? diurnos.map(r=>[r.piazza,r.supervisor,r.operador||"—",r.ingreso,r.salida,minAHoras(r.minutos||0)]) : [["Sin rondas registradas","","","","",""]],
+    styles:{ fontSize:9 },
+    headStyles:{ fillColor:[15,42,68] }
+  });
+
+  y = docPDF.lastAutoTable.finalY + 10;
+  docPDF.text(`Nocturno — total: ${minAHoras(totalNocturno)}`, 14, y);
+  y += 4;
+  docPDF.autoTable({
+    startY: y,
+    head: [["Piazza","Supervisor","Operador","Ingreso","Salida","Tiempo"]],
+    body: nocturnos.length ? nocturnos.map(r=>[r.piazza,r.supervisor,r.operador||"—",r.ingreso,r.salida,minAHoras(r.minutos||0)]) : [["Sin rondas registradas","","","","",""]],
+    styles:{ fontSize:9 },
+    headStyles:{ fillColor:[15,42,68] }
+  });
+
+  const sufijoPiazza = piazza ? "_" + piazza.replace(/\s+/g,"") : "";
+  docPDF.save(`rondas${sufijoPiazza}_${fecha}.pdf`);
+}
+
+/* ===================================================================
+   PESTAÑA 4: PARÁMETROS (tabla día por día, según formato solicitado)
+=================================================================== */
+const DIAS_KEY = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"];
+const DIAS_LABEL = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const HORAS_OPCIONES = Array.from({length:13}, (_,i)=>i); // 0 a 12
+const MIN_OPCIONES = Array.from({length:12}, (_,i)=>i*5); // 0,5,10...55
+
+function vacioSemana(){
+  const o = {};
+  DIAS_KEY.forEach(k=>o[k]=0);
+  return o;
+}
+
+async function cargarParametros(){
+  try{
+    const snap = await getDocs(collection(db, PARAM_COL));
+    PARAMETROS = {};
+    snap.forEach(d=>{ PARAMETROS[d.id] = d.data(); });
+  }catch(e){
+    console.error("Error al cargar parámetros:", e);
+    document.getElementById("parametros-lista").insertAdjacentHTML("beforebegin",
+      `<div class="msg err" style="display:block;">No se pudo conectar a Firestore para cargar los parámetros guardados
+       (se muestran en 0 por ahora). Revisa la configuración de Firebase. Detalle: ${e.message}</div>`);
+  }
+  renderParametros();
+  renderEstadistica();
+}
+
+function selectParPara(piazza, turno, diaKey, minutosActuales){
+  const horas = Math.floor((minutosActuales||0)/60);
+  const minutos = (minutosActuales||0) % 60;
+  const minutosRedondeado = Math.round(minutos/5)*5 % 60;
+  return `<div class="dia-select-pair" data-dia="${diaKey}">
+    <select class="sel-h">${HORAS_OPCIONES.map(h=>`<option value="${h}" ${h===horas?"selected":""}>${h}h</option>`).join("")}</select>
+    <select class="sel-m">${MIN_OPCIONES.map(m=>`<option value="${m}" ${m===minutosRedondeado?"selected":""}>${m}m</option>`).join("")}</select>
+  </div>`;
+}
+
+function renderParametros(){
+  const cont = document.getElementById("parametros-lista");
+  cont.innerHTML = PIAZZAS.map(piazza=>{
+    const p = PARAMETROS[piazza] || {diurno:vacioSemana(), nocturno:vacioSemana()};
+    const diurno = p.diurno || vacioSemana();
+    const nocturno = p.nocturno || vacioSemana();
+
+    function filaTurno(turno, datos){
+      const celdasDias = DIAS_KEY.map(k=> `<td>${selectParPara(piazza, turno, k, datos[k]||0)}</td>`).join("");
+      return `<tr data-turno="${turno}">
+        <td class="turno-lbl">${turno==="diurno"?"Diurno":"Nocturno"}</td>
+        ${celdasDias}
+        <td class="total-cell" data-tot="semana">—</td>
+        <td class="total-cell" data-tot="mes">—</td>
+        <td><button type="button" class="btn secundario chico copiar-lunes-btn" data-turno="${turno}" title="Copia el valor de Lunes a Martes-Domingo en esta fila">Copiar Lun → semana</button></td>
+      </tr>`;
+    }
+
+    return `<details class="piazza-param" data-piazza="${piazza}">
+      <summary>
+        <span>${piazza} <span class="guardado-flag">Guardado ✓</span></span>
+        <span style="display:flex;align-items:center;gap:10px;">
+          <button type="button" class="reset-btn" data-piazza="${piazza}">Reiniciar</button>
+          <span class="flecha">▶</span>
+        </span>
+      </summary>
+      <div class="param-tabla-wrap">
+        <div style="margin-bottom:8px;">
+          <button type="button" class="btn secundario chico copiar-turnos-btn" title="Copia los 7 días de Diurno hacia Nocturno en esta Piazza">Copiar Diurno → Nocturno (toda la fila)</button>
+        </div>
+        <table class="param-tabla">
+          <thead>
+            <tr>
+              <th>Turno</th>
+              ${DIAS_LABEL.map(d=>`<th>${d}</th>`).join("")}
+              <th>Total a la semana</th>
+              <th>Total al mes</th>
+              <th>Copiar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filaTurno("diurno", diurno)}
+            ${filaTurno("nocturno", nocturno)}
+          </tbody>
+        </table>
+      </div>
+    </details>`;
+  }).join("");
+
+  cont.querySelectorAll("details.piazza-param").forEach(det=>{
+    const piazza = det.dataset.piazza;
+    recalcTotales(det);
+    det.querySelectorAll("select").forEach(sel=>{
+      sel.addEventListener("change", async ()=>{
+        recalcTotales(det);
+        await guardarPiazzaParametros(piazza, det);
+      });
+    });
+
+    det.querySelectorAll(".copiar-lunes-btn").forEach(btn=>{
+      btn.addEventListener("click", async (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        const turno = btn.dataset.turno;
+        const fila = det.querySelector(`tr[data-turno="${turno}"]`);
+        copiarLunesATodaLaSemana(fila);
+        recalcTotales(det);
+        await guardarPiazzaParametros(piazza, det);
+      });
+    });
+
+    det.querySelector(".copiar-turnos-btn").addEventListener("click", async (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      copiarDiurnoANocturno(det);
+      recalcTotales(det);
+      await guardarPiazzaParametros(piazza, det);
+    });
+  });
+
+  cont.querySelectorAll(".reset-btn").forEach(btn=>{
+    btn.addEventListener("click", async (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      const piazza = btn.dataset.piazza;
+      const ok = confirm(`¿Reiniciar (eliminar) toda la configuración de metas de ${piazza}? Todos los días quedarán en 0.`);
+      if(!ok) return;
+      try{
+        await deleteDoc(doc(db, PARAM_COL, piazza));
+        delete PARAMETROS[piazza];
+        renderParametros();
+        renderEstadistica();
+      }catch(e){
+        alert("Error al reiniciar: " + e.message);
+      }
+    });
+  });
+}
+
+// Copia el valor de Lunes (horas+minutos) hacia Martes...Domingo dentro de la misma fila.
+function copiarLunesATodaLaSemana(filaEl){
+  const parLunes = filaEl.querySelector('.dia-select-pair[data-dia="lunes"]');
+  const h = parLunes.querySelector(".sel-h").value;
+  const m = parLunes.querySelector(".sel-m").value;
+  ["martes","miercoles","jueves","viernes","sabado","domingo"].forEach(dia=>{
+    const par = filaEl.querySelector(`.dia-select-pair[data-dia="${dia}"]`);
+    par.querySelector(".sel-h").value = h;
+    par.querySelector(".sel-m").value = m;
+  });
+}
+
+// Copia los 7 días de la fila Diurno hacia la fila Nocturno, dentro del mismo bloque de Piazza.
+function copiarDiurnoANocturno(det){
+  const filaDiurno = det.querySelector('tr[data-turno="diurno"]');
+  const filaNocturno = det.querySelector('tr[data-turno="nocturno"]');
+  DIAS_KEY.forEach(dia=>{
+    const parOrigen = filaDiurno.querySelector(`.dia-select-pair[data-dia="${dia}"]`);
+    const parDestino = filaNocturno.querySelector(`.dia-select-pair[data-dia="${dia}"]`);
+    parDestino.querySelector(".sel-h").value = parOrigen.querySelector(".sel-h").value;
+    parDestino.querySelector(".sel-m").value = parOrigen.querySelector(".sel-m").value;
+  });
+}
+
+function leerFila(rowEl){
+  const datos = {};
+  DIAS_KEY.forEach(k=>{
+    const par = rowEl.querySelector(`.dia-select-pair[data-dia="${k}"]`);
+    const h = Number(par.querySelector(".sel-h").value)||0;
+    const m = Number(par.querySelector(".sel-m").value)||0;
+    datos[k] = h*60+m;
+  });
+  return datos;
+}
+
+function totalesDeFila(datos){
+  // "Total a la semana" ahora suma los 7 días (incluye sábado y domingo).
+  const semana = datos.lunes+datos.martes+datos.miercoles+datos.jueves+datos.viernes+datos.sabado+datos.domingo;
+  const mes = semana * 30;
+  return {semana, mes};
+}
+
+function recalcTotales(det){
+  det.querySelectorAll("tr[data-turno]").forEach(row=>{
+    const datos = leerFila(row);
+    const {semana, mes} = totalesDeFila(datos);
+    row.querySelector('[data-tot="semana"]').textContent = minAHoras(semana);
+    row.querySelector('[data-tot="mes"]').textContent = minAHoras(mes);
+  });
+}
+
+async function guardarPiazzaParametros(piazza, det){
+  const filaDiurno = det.querySelector('tr[data-turno="diurno"]');
+  const filaNocturno = det.querySelector('tr[data-turno="nocturno"]');
+  const data = {
+    diurno: leerFila(filaDiurno),
+    nocturno: leerFila(filaNocturno)
+  };
+  try{
+    await setDoc(doc(db, PARAM_COL, piazza), data);
+    PARAMETROS[piazza] = data;
+    const flag = det.querySelector(".guardado-flag");
+    flag.textContent = "Guardado ✓";
+    flag.style.color = "";
+    flag.classList.add("show");
+    setTimeout(()=>flag.classList.remove("show"), 1500);
+    renderEstadistica();
+  }catch(e){
+    console.error("Error al guardar parámetros de "+piazza+":", e);
+    const flag = det.querySelector(".guardado-flag");
+    flag.textContent = "⚠️ No se pudo guardar";
+    flag.style.color = "var(--rojo)";
+    flag.classList.add("show");
+  }
+}
+
+cargarParametros();
+
+document.getElementById("p-exportar-csv").addEventListener("click", ()=>{
+  const encabezado = ["Piazza","Turno","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo","Total Semana (min)","Total Mes (min)"];
+  const filas = [];
+  PIAZZAS.forEach(piazza=>{
+    const p = PARAMETROS[piazza] || {diurno:vacioSemana(), nocturno:vacioSemana()};
+    ["diurno","nocturno"].forEach(turno=>{
+      const datos = p[turno] || vacioSemana();
+      const {semana, mes} = totalesDeFila(datos);
+      filas.push([
+        piazza, turno==="diurno"?"Diurno":"Nocturno",
+        datos.lunes, datos.martes, datos.miercoles, datos.jueves, datos.viernes, datos.sabado, datos.domingo,
+        semana, mes
+      ]);
+    });
+  });
+  const csv = [encabezado, ...filas].map(fila=>fila.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "parametros_bunker.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("p-exportar-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+
+  const docPDF = new JsPDF({orientation:"landscape"});
+  docPDF.setFontSize(14);
+  docPDF.text("Parámetros de meta por Piazza — BUNKER", 14, 14);
+  docPDF.setFontSize(9);
+  docPDF.setTextColor(90,100,110);
+  docPDF.text("Total a la semana = suma de los 7 días. Total al mes = total semanal × 30.", 14, 20);
+
+  const body = [];
+  PIAZZAS.forEach(piazza=>{
+    const p = PARAMETROS[piazza] || {diurno:vacioSemana(), nocturno:vacioSemana()};
+    ["diurno","nocturno"].forEach(turno=>{
+      const datos = p[turno] || vacioSemana();
+      const {semana, mes} = totalesDeFila(datos);
+      body.push([
+        piazza, turno==="diurno"?"Diurno":"Nocturno",
+        minAHoras(datos.lunes), minAHoras(datos.martes), minAHoras(datos.miercoles), minAHoras(datos.jueves),
+        minAHoras(datos.viernes), minAHoras(datos.sabado), minAHoras(datos.domingo),
+        minAHoras(semana), minAHoras(mes)
+      ]);
+    });
+  });
+
+  docPDF.autoTable({
+    startY: 26,
+    head: [["Piazza","Turno","Lun","Mar","Mié","Jue","Vie","Sáb","Dom","Total semana","Total mes"]],
+    body,
+    styles:{ fontSize:8 },
+    headStyles:{ fillColor:[15,42,68] }
+  });
+
+  docPDF.save("parametros_bunker.pdf");
+});
+
+/* ===================================================================
+   PESTAÑA 5: RESUMEN (Piazza + Mes -> listado completo de rondas)
+=================================================================== */
+function fechaCorta(fechaStr){
+  const dt = parseFechaLocal(fechaStr);
+  return `${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
+}
+
+// mes actual por defecto
+document.getElementById("res-mes").value = new Date().toISOString().slice(0,7);
+
+["res-piazza","res-mes","res-turno","res-supervisor","res-operador","res-sumar"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", renderResumen);
+});
+
+function poblarFiltrosResumen(){
+  const supSelEl = document.getElementById("res-supervisor");
+  const opSelEl = document.getElementById("res-operador");
+  const supActual = supSelEl.value;
+  const opActual = opSelEl.value;
+
+  const supervisores = Array.from(new Set(RONDAS.map(r=>r.supervisor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  supSelEl.innerHTML = `<option value="">Todos los supervisores</option>` +
+    supervisores.map(n=>`<option ${n===supActual?"selected":""}>${n}</option>`).join("");
+
+  const operadores = Array.from(new Set(RONDAS.map(r=>r.operador).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  opSelEl.innerHTML = `<option value="">Todos los operadores</option>` +
+    operadores.map(n=>`<option ${n===opActual?"selected":""}>${n}</option>`).join("");
+}
+
+function filtrarRegistrosResumen(){
+  const piazza = document.getElementById("res-piazza").value;
+  const mesVal = document.getElementById("res-mes").value;
+  const turnoFiltro = document.getElementById("res-turno").value;
+  const supervisorFiltro = document.getElementById("res-supervisor").value;
+  const operadorFiltro = document.getElementById("res-operador").value;
+
+  if(!piazza || !mesVal) return null;
+
+  const filtradas = RONDAS.filter(r=>{
+    if(r.piazza !== piazza) return false;
+    if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
+    if(turnoFiltro && r.turno !== turnoFiltro) return false;
+    if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+    if(operadorFiltro && (r.operador||"") !== operadorFiltro) return false;
+    return true;
+  });
+
+  filtradas.sort((a,b)=>{
+    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.ingreso||"").localeCompare(b.ingreso||"");
+  });
+
+  return filtradas;
+}
+
+// Agrupa registros que comparten la misma Fecha, sumando sus minutos.
+// Un mismo día puede tener varios turnos y/o varios supervisores; se listan todos
+// y el tiempo se suma para dejar un solo dato por fecha.
+function agruparParaSumar(filtradas){
+  const grupos = {};
+  const orden = [];
+  filtradas.forEach(r=>{
+    const clave = r.fecha;
+    if(!grupos[clave]){
+      grupos[clave] = { fecha:r.fecha, piazza:r.piazza, registros:[], totalMinutos:0 };
+      orden.push(clave);
+    }
+    grupos[clave].registros.push(r);
+    grupos[clave].totalMinutos += (r.minutos||0);
+  });
+
+  return orden.map(clave=>{
+    const g = grupos[clave];
+    const operadores = Array.from(new Set(g.registros.map(r=>r.operador).filter(Boolean)));
+    const supervisores = Array.from(new Set(g.registros.map(r=>r.supervisor).filter(Boolean)));
+    const turnos = Array.from(new Set(g.registros.map(r=>r.turno).filter(Boolean)));
+    return {
+      fecha: g.fecha,
+      piazza: g.piazza,
+      turno: turnos.join(" + "),
+      supervisor: supervisores.join(", "),
+      cantidad: g.registros.length,
+      ingresos: g.registros.map(r=>r.ingreso).join(" / "),
+      salidas: g.registros.map(r=>r.salida).join(" / "),
+      totalMinutos: g.totalMinutos,
+      operador: operadores.length ? operadores.join(", ") : "—",
+      ids: g.registros.map(r=>r.id)
+    };
+  });
+}
+
+function renderResumen(){
+  poblarFiltrosResumen();
+
+  const piazza = document.getElementById("res-piazza").value;
+  const tabla = document.getElementById("res-tabla");
+  const filtradas = filtrarRegistrosResumen();
+  const sumarActivo = document.getElementById("res-sumar").checked;
+
+  if(filtradas === null){
+    tabla.innerHTML = "";
+    document.getElementById("res-total-rondas").textContent = "—";
+    document.getElementById("res-total-tiempo").textContent = "—";
+    document.getElementById("res-total-diurno-nocturno").textContent = "—";
+    return;
+  }
+
+  const totalTiempo = filtradas.reduce((s,r)=>s+(r.minutos||0),0);
+  const totalDiurno = filtradas.filter(r=>r.turno==="Diurno").reduce((s,r)=>s+(r.minutos||0),0);
+  const totalNocturno = filtradas.filter(r=>r.turno==="Nocturno").reduce((s,r)=>s+(r.minutos||0),0);
+
+  document.getElementById("res-total-rondas").textContent = filtradas.length;
+  document.getElementById("res-total-tiempo").textContent = minAHoras(totalTiempo);
+  document.getElementById("res-total-diurno-nocturno").textContent = `${minAHoras(totalDiurno)} / ${minAHoras(totalNocturno)}`;
+
+  if(filtradas.length === 0){
+    tabla.innerHTML = `<tbody><tr><td style="text-align:center;padding:14px;color:var(--gris-400);font-style:italic;">Sin rondas registradas para ${piazza} con estos filtros.</td></tr></tbody>`;
+    return;
+  }
+
+  if(sumarActivo){
+    const agrupadas = agruparParaSumar(filtradas);
+    tabla.innerHTML = `
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Piazza</th><th>Turno(s)</th><th>Supervisor(es)</th>
+          <th>Ingresos</th><th>Salidas</th><th>N.° rondas</th><th>Tiempo sumado</th><th>Operador(es)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${agrupadas.map(g=>`<tr>
+          <td>${fechaCorta(g.fecha)}</td>
+          <td>${SIGLAS[g.piazza]||g.piazza}</td>
+          <td>${g.turno}</td>
+          <td>${g.supervisor}</td>
+          <td>${g.ingresos}</td>
+          <td>${g.salidas}</td>
+          <td>${g.cantidad}</td>
+          <td><b>${minAHoras(g.totalMinutos)}</b></td>
+          <td>${g.operador}</td>
+        </tr>`).join("")}
+      </tbody>
+    `;
+    return;
+  }
+
+  tabla.innerHTML = `
+    <thead>
+      <tr>
+        <th>Fecha</th><th>Piazza</th><th>Turno</th><th>Supervisor</th>
+        <th>Hora Ingreso</th><th>Hora Salida</th><th>Tiempo que permaneció</th><th>Operador</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filtradas.map(r=>`<tr data-id="${r.id}">
+        <td>${fechaCorta(r.fecha)}</td>
+        <td>${SIGLAS[r.piazza]||r.piazza}</td>
+        <td>${r.turno}</td>
+        <td>${r.supervisor}</td>
+        <td>${r.ingreso}</td>
+        <td>${r.salida}</td>
+        <td>${minAHoras(r.minutos||0)}</td>
+        <td>${r.operador || "—"}</td>
+        <td>
+          <div class="fila-acciones">
+            <button class="icon-btn editar" title="Editar" data-id="${r.id}">✏️</button>
+            <button class="icon-btn eliminar" title="Eliminar" data-id="${r.id}">🗑️</button>
+          </div>
+        </td>
+      </tr>`).join("")}
+    </tbody>
+  `;
+
+  tabla.querySelectorAll(".icon-btn.editar").forEach(btn=>{
+    btn.addEventListener("click", (ev)=>{
+      ev.preventDefault();
+      const ronda = RONDAS.find(r=>r.id===btn.dataset.id);
+      if(ronda) entrarModoEdicion(ronda);
+    });
+  });
+
+
+  tabla.querySelectorAll(".icon-btn.eliminar").forEach(btn=>{
+    btn.addEventListener("click", async (ev)=>{
+      ev.preventDefault();
+      const ronda = RONDAS.find(r=>r.id===btn.dataset.id);
+      if(!ronda) return;
+      const ok = confirm(`¿Eliminar la ronda de ${ronda.piazza} (${ronda.supervisor}, ${ronda.ingreso}-${ronda.salida}) del ${fechaBonita(ronda.fecha)}?`);
+      if(!ok) return;
+      try{
+        await deleteDoc(doc(db, RONDAS_COL, ronda.id));
+      }catch(e){
+        alert("Error al eliminar: " + e.message);
+      }
+    });
+  });
+}
+
+document.getElementById("res-exportar-csv").addEventListener("click", ()=>{
+  const piazza = document.getElementById("res-piazza").value;
+  const mesVal = document.getElementById("res-mes").value;
+  if(!piazza || !mesVal){ alert("Escoge una Piazza y un mes primero."); return; }
+
+  const filtradas = filtrarRegistrosResumen() || [];
+
+  const encabezado = ["Fecha","Piazza","Turno","Supervisor","Hora Ingreso","Hora Salida","Tiempo que permaneció","Operador"];
+  const filas = filtradas.map(r=>[fechaCorta(r.fecha), r.piazza, r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||""]);
+  const csv = [encabezado, ...filas].map(fila=>fila.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `resumen_${piazza.replace(/\s+/g,"")}_${mesVal}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("res-exportar-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+
+  const piazza = document.getElementById("res-piazza").value;
+  const mesVal = document.getElementById("res-mes").value;
+  if(!piazza || !mesVal){ alert("Escoge una Piazza y un mes primero."); return; }
+
+  const filtradas = filtrarRegistrosResumen() || [];
+
+  const [yearStr, monthStr] = mesVal.split("-");
+  const etiquetaMes = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+
+  const docPDF = new JsPDF();
+  docPDF.setFontSize(14);
+  docPDF.text(`Resumen de Rondas — ${piazza} — ${etiquetaMes}`, 14, 16);
+  docPDF.setFontSize(9);
+  docPDF.setTextColor(90,100,110);
+  docPDF.text(`Total de rondas: ${filtradas.length}`, 14, 22);
+
+  docPDF.autoTable({
+    startY: 28,
+    head: [["Fecha","Turno","Supervisor","Ingreso","Salida","Tiempo","Operador"]],
+    body: filtradas.map(r=>[fechaCorta(r.fecha), r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||"—"]),
+    styles:{ fontSize:8 },
+    headStyles:{ fillColor:[15,42,68] }
+  });
+
+  docPDF.save(`resumen_${piazza.replace(/\s+/g,"")}_${mesVal}.pdf`);
+});
+
+/* ---- Exportar MES COMPLETO (todas las Piazzas juntas), sin depender del filtro de Piazza ---- */
+function filtrarTodoElMesTodasLasPiazzas(){
+  const mesVal = document.getElementById("res-mes").value;
+  const turnoFiltro = document.getElementById("res-turno").value;
+  const supervisorFiltro = document.getElementById("res-supervisor").value;
+  const operadorFiltro = document.getElementById("res-operador").value;
+  if(!mesVal) return null;
+
+  const filtradas = RONDAS.filter(r=>{
+    if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
+    if(turnoFiltro && r.turno !== turnoFiltro) return false;
+    if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+    if(operadorFiltro && (r.operador||"") !== operadorFiltro) return false;
+    return true;
+  });
+
+  filtradas.sort((a,b)=>{
+    const pa = PIAZZAS.indexOf(a.piazza), pb = PIAZZAS.indexOf(b.piazza);
+    if(pa !== pb) return pa - pb;
+    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.ingreso||"").localeCompare(b.ingreso||"");
+  });
+
+  return filtradas;
+}
+
+// Igual que agruparParaSumar, pero agrupa por Piazza+Fecha (no solo Fecha), ya que aquí hay varias Piazzas mezcladas.
+function agruparParaSumarMultiPiazza(filtradas){
+  const grupos = {};
+  const orden = [];
+  filtradas.forEach(r=>{
+    const clave = `${r.piazza}|${r.fecha}`;
+    if(!grupos[clave]){
+      grupos[clave] = { fecha:r.fecha, piazza:r.piazza, registros:[], totalMinutos:0 };
+      orden.push(clave);
+    }
+    grupos[clave].registros.push(r);
+    grupos[clave].totalMinutos += (r.minutos||0);
+  });
+
+  return orden.map(clave=>{
+    const g = grupos[clave];
+    const operadores = Array.from(new Set(g.registros.map(r=>r.operador).filter(Boolean)));
+    const supervisores = Array.from(new Set(g.registros.map(r=>r.supervisor).filter(Boolean)));
+    const turnos = Array.from(new Set(g.registros.map(r=>r.turno).filter(Boolean)));
+    return {
+      fecha: g.fecha, piazza: g.piazza,
+      turno: turnos.join(" + "), supervisor: supervisores.join(", "),
+      cantidad: g.registros.length,
+      ingresos: g.registros.map(r=>r.ingreso).join(" / "),
+      salidas: g.registros.map(r=>r.salida).join(" / "),
+      totalMinutos: g.totalMinutos,
+      operador: operadores.length ? operadores.join(", ") : "—"
+    };
+  });
+}
+
+document.getElementById("res-exportar-mes-csv").addEventListener("click", ()=>{
+  const mesVal = document.getElementById("res-mes").value;
+  if(!mesVal){ alert("Escoge un mes primero."); return; }
+
+  const filtradas = filtrarTodoElMesTodasLasPiazzas();
+  if(!filtradas || filtradas.length===0){ alert("No hay rondas registradas ese mes."); return; }
+
+  const sumarActivo = document.getElementById("res-sumar").checked;
+  let encabezado, filas;
+
+  if(sumarActivo){
+    const agrupadas = agruparParaSumarMultiPiazza(filtradas);
+    encabezado = ["Fecha","Piazza","Turno(s)","Supervisor(es)","Ingresos","Salidas","N.° rondas","Tiempo sumado","Operador(es)"];
+    filas = agrupadas.map(g=>[fechaCorta(g.fecha), g.piazza, g.turno, g.supervisor, g.ingresos, g.salidas, g.cantidad, minAHoras(g.totalMinutos), g.operador]);
+  }else{
+    encabezado = ["Fecha","Piazza","Turno","Supervisor","Hora Ingreso","Hora Salida","Tiempo que permaneció","Operador"];
+    filas = filtradas.map(r=>[fechaCorta(r.fecha), r.piazza, r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||""]);
+  }
+
+  const csv = [encabezado, ...filas].map(fila=>fila.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `resumen_TODAS_PIAZZAS_${mesVal}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("res-exportar-mes-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+
+  const mesVal = document.getElementById("res-mes").value;
+  if(!mesVal){ alert("Escoge un mes primero."); return; }
+
+  const filtradas = filtrarTodoElMesTodasLasPiazzas();
+  if(!filtradas || filtradas.length===0){ alert("No hay rondas registradas ese mes."); return; }
+
+  const sumarActivo = document.getElementById("res-sumar").checked;
+  const [yearStr, monthStr] = mesVal.split("-");
+  const etiquetaMes = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+
+  const docPDF = new JsPDF({orientation:"landscape"});
+  docPDF.setFontSize(14);
+  docPDF.text(`Resumen de Rondas — Todas las Piazzas — ${etiquetaMes}`, 14, 14);
+  docPDF.setFontSize(9);
+  docPDF.setTextColor(90,100,110);
+  docPDF.text(`Total de rondas: ${filtradas.length}`, 14, 20);
+
+  if(sumarActivo){
+    const agrupadas = agruparParaSumarMultiPiazza(filtradas);
+    docPDF.autoTable({
+      startY: 26,
+      head: [["Fecha","Piazza","Turno(s)","Supervisor(es)","Ingresos","Salidas","N.° rondas","Tiempo sumado","Operador(es)"]],
+      body: agrupadas.map(g=>[fechaCorta(g.fecha), g.piazza, g.turno, g.supervisor, g.ingresos, g.salidas, g.cantidad, minAHoras(g.totalMinutos), g.operador]),
+      styles:{ fontSize:8 },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+  }else{
+    docPDF.autoTable({
+      startY: 26,
+      head: [["Fecha","Piazza","Turno","Supervisor","Ingreso","Salida","Tiempo","Operador"]],
+      body: filtradas.map(r=>[fechaCorta(r.fecha), r.piazza, r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||"—"]),
+      styles:{ fontSize:8 },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+  }
+
+  docPDF.save(`resumen_TODAS_PIAZZAS_${mesVal}.pdf`);
+});
+
+/* ===================================================================
+   PESTAÑA 3: ESTADÍSTICA
+=================================================================== */
+
+// mes actual por defecto (formato YYYY-MM)
+document.getElementById("e-mes").value = new Date().toISOString().slice(0,7);
+document.getElementById("e-semana").value = fechaAIsoWeek(new Date());
+
+document.getElementById("e-periodo").addEventListener("change", ()=>{
+  const periodo = document.getElementById("e-periodo").value;
+  document.getElementById("e-mes-wrap").style.display = periodo==="mes" ? "block" : "none";
+  document.getElementById("e-semana-wrap").style.display = periodo==="semana" ? "block" : "none";
+  renderEstadistica();
+});
+
+["e-mes","e-semana","e-piazza","e-supervisor","e-modo"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", renderEstadistica);
+});
+
+function poblarSupervisoresEstadistica(){
+  const sel = document.getElementById("e-supervisor");
+  const actual = sel.value;
+  const nombres = Array.from(new Set(RONDAS.map(r=>r.supervisor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = `<option value="">Todos los supervisores</option>` +
+    nombres.map(n=>`<option ${n===actual?"selected":""}>${n}</option>`).join("");
+}
+
+function fechaAIsoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay()+6)%7; // lunes=0
+  d.setUTCDate(d.getUTCDate()-dayNum+3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  const week = 1 + Math.round(((d-firstThursday)/86400000 - 3 + ((firstThursday.getUTCDay()+6)%7))/7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2,"0")}`;
+}
+
+function isoWeekARango(weekStr){
+  // weekStr: "YYYY-Www"
+  const [yearStr, wStr] = weekStr.split("-W");
+  const year = Number(yearStr);
+  const week = Number(wStr);
+  const simple = new Date(Date.UTC(year,0,1+(week-1)*7));
+  const dow = simple.getUTCDay();
+  const inicio = new Date(simple);
+  const offset = dow<=4 ? 1-dow : 8-dow;
+  inicio.setUTCDate(simple.getUTCDate()+offset);
+  const fin = new Date(inicio);
+  fin.setUTCDate(inicio.getUTCDate()+6);
+  return {inicio, fin};
+}
+
+function fechaEnRango(fechaStr, inicio, fin){
+  const dt = parseFechaLocal(fechaStr);
+  const dtUTC = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+  return dtUTC >= inicio && dtUTC <= fin;
+}
+
+function metaPiazza(piazza, modo, periodo){
+  const p = PARAMETROS[piazza] || {diurno:vacioSemana(), nocturno:vacioSemana()};
+  const totDiurno = totalesDeFila(p.diurno || vacioSemana());
+  const totNocturno = totalesDeFila(p.nocturno || vacioSemana());
+  const campo = periodo==="semana" ? "semana" : "mes";
+  if(modo==="Diurno") return totDiurno[campo];
+  if(modo==="Nocturno") return totNocturno[campo];
+  return totDiurno[campo] + totNocturno[campo];
+}
+
+function renderEstadistica(){
+  const periodo = document.getElementById("e-periodo").value;
+  const piazzaFiltro = document.getElementById("e-piazza").value;
+  const supervisorFiltro = document.getElementById("e-supervisor").value;
+  const modo = document.getElementById("e-modo").value;
+
+  let filtroFecha;
+  if(periodo==="mes"){
+    const mesVal = document.getElementById("e-mes").value;
+    if(!mesVal) return;
+    filtroFecha = (r)=> r.fecha && r.fecha.startsWith(mesVal);
+  }else{
+    const semanaVal = document.getElementById("e-semana").value;
+    if(!semanaVal) return;
+    const {inicio, fin} = isoWeekARango(semanaVal);
+    filtroFecha = (r)=> r.fecha && fechaEnRango(r.fecha, inicio, fin);
+  }
+
+  const piazzasAMostrar = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
+
+  const caption = document.getElementById("e-caption-filtro");
+  const baseTxt = supervisorFiltro
+    ? `Mostrando el aporte de ${supervisorFiltro} comparado contra la meta total de cada Piazza`
+    : `Mostrando el total rondado por todos los supervisores en cada Piazza`;
+  caption.textContent = baseTxt + (periodo==="semana" ? " (meta semanal: lunes a domingo)." : " (meta mensual: total semanal × 30).");
+
+  const filas = piazzasAMostrar.map(piazza=>{
+    const real = RONDAS.filter(r=>{
+      if(r.piazza !== piazza) return false;
+      if(!filtroFecha(r)) return false;
+      if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+      if(modo !== "total" && r.turno !== modo) return false;
+      return true;
+    }).reduce((s,r)=>s+(r.minutos||0),0);
+
+    const meta = metaPiazza(piazza, modo, periodo);
+    const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
+    return {piazza, real, meta, pct};
+  });
+
+  // resumen
+  const totalReal = filas.reduce((s,f)=>s+f.real,0);
+  const totalMeta = filas.reduce((s,f)=>s+f.meta,0);
+  const promedioPct = filas.length ? Math.round(filas.reduce((s,f)=>s+f.pct,0)/filas.length) : 0;
+
+  document.getElementById("e-cum-prom").textContent = promedioPct + "%";
+  document.getElementById("e-total-real").textContent = minAHoras(totalReal);
+  document.getElementById("e-total-meta").textContent = minAHoras(totalMeta);
+
+  // tabla de detalle (piazza / real / meta / %)
+  const tbody = document.querySelector("#e-tabla tbody");
+  tbody.innerHTML = filas.map(f=>{
+    let pillClass = "bad";
+    if(f.pct>=100) pillClass="ok"; else if(f.pct>=70) pillClass="warn";
+    return `<tr>
+      <td>${f.piazza}</td>
+      <td>${minAHoras(f.real)}</td>
+      <td>${minAHoras(f.meta)}</td>
+      <td><span class="pill ${pillClass}">${f.pct}%</span></td>
+    </tr>`;
+  }).join("");
+
+  // etiqueta del periodo (para titulo, dataset y tabla resumen)
+  const etiquetaPeriodo = obtenerEtiquetaPeriodo(periodo);
+  document.getElementById("e-chart-titulo").textContent = `SUPERVISIÓN ${etiquetaPeriodo}`;
+
+  // tabla resumen tipo hoja de calculo (siglas como columnas, PROMEDIO y periodo como filas)
+  const head = document.getElementById("e-resumen-head");
+  const body = document.getElementById("e-resumen-body");
+  head.innerHTML = `<th></th>` + filas.map(f=>`<th>${SIGLAS[f.piazza]||f.piazza}</th>`).join("");
+  body.innerHTML = `
+    <tr><td>PROMEDIO</td>${filas.map(()=>`<td>100%</td>`).join("")}</tr>
+    <tr><td>${etiquetaPeriodo}</td>${filas.map(f=>`<td>${f.pct}%</td>`).join("")}</tr>
+  `;
+
+  // grafico de lineas dibujado en SVG puro (sin librerias externas, siempre visible)
+  const labels = filas.map(f=> SIGLAS[f.piazza] || f.piazza);
+  const dataPeriodo = filas.map(f=>f.pct);
+  const wrap = document.getElementById("e-chart-svg-wrap");
+  wrap.innerHTML = construirSVGGrafico(labels, dataPeriodo, etiquetaPeriodo);
+}
+
+function construirSVGGrafico(labels, dataPeriodo, etiquetaPeriodo){
+  const W = 900, H = 340;
+  const padL = 55, padR = 30, padT = 40, padB = 45;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const todos = [100, ...dataPeriodo];
+  let minV = Math.min(0, ...todos);
+  let maxV = Math.max(...todos);
+  const rango = Math.max(maxV - minV, 20);
+  maxV += rango * 0.18;
+  minV -= rango * 0.10;
+  const rangoFinal = maxV - minV;
+
+  function yFor(v){ return padT + (maxV - v) / rangoFinal * plotH; }
+  function xFor(i){ return labels.length<=1 ? padL+plotW/2 : padL + (i/(labels.length-1)) * plotW; }
+
+  const y100 = yFor(100);
+  const puntos = dataPeriodo.map((v,i)=> `${xFor(i).toFixed(1)},${yFor(v).toFixed(1)}`).join(" ");
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;font-family:'Segoe UI',system-ui,sans-serif;">`;
+
+  // linea de meta (100%) en azul
+  svg += `<line x1="${padL}" y1="${y100.toFixed(1)}" x2="${W-padR}" y2="${y100.toFixed(1)}" stroke="#3b82c4" stroke-width="2.5"/>`;
+  svg += `<text x="${padL-8}" y="${(y100+4).toFixed(1)}" font-size="14" font-weight="700" fill="#0f2a44" text-anchor="end">100%</text>`;
+
+  // linea del periodo actual en naranja
+  svg += `<polyline points="${puntos}" fill="none" stroke="#e0562e" stroke-width="2.5"/>`;
+
+  // puntos + etiquetas (alternando arriba/abajo) + siglas en el eje X
+  dataPeriodo.forEach((v,i)=>{
+    const x = xFor(i), y = yFor(v);
+    const arriba = i % 2 === 0;
+    const dy = arriba ? -12 : 22;
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#e0562e"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" font-size="12.5" font-weight="700" fill="#2b3846" text-anchor="middle">${labels[i]}: ${v}%</text>`;
+    svg += `<text x="${x.toFixed(1)}" y="${H-padB+22}" font-size="12" fill="#5b6b7c" text-anchor="middle">${labels[i]}</text>`;
+  });
+
+  // leyenda simple
+  const legY = 18;
+  svg += `<line x1="${padL}" y1="${legY}" x2="${padL+22}" y2="${legY}" stroke="#3b82c4" stroke-width="3"/>`;
+  svg += `<text x="${padL+28}" y="${legY+4}" font-size="12" fill="#5b6b7c">Meta (100%)</text>`;
+  svg += `<line x1="${padL+140}" y1="${legY}" x2="${padL+162}" y2="${legY}" stroke="#e0562e" stroke-width="3"/>`;
+  svg += `<text x="${padL+168}" y="${legY+4}" font-size="12" fill="#5b6b7c">${etiquetaPeriodo}</text>`;
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function obtenerEtiquetaPeriodo(periodo){
+  if(periodo==="semana"){
+    const semanaVal = document.getElementById("e-semana").value;
+    if(!semanaVal) return "SEMANA";
+    const [yearStr, wStr] = semanaVal.split("-W");
+    return `SEMANA ${Number(wStr)} · ${yearStr}`;
+  }
+  const mesVal = document.getElementById("e-mes").value;
+  if(!mesVal) return "MES";
+  const [yearStr, monthStr] = mesVal.split("-");
+  return `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+}
+
+/* ---- Exportar Estadística: PNG del gráfico (rasterizando el SVG) y CSV de la tabla de detalle ---- */
+
+// Helper compartido: convierte el SVG del gráfico actual en un dataURL PNG (usado por PNG y PDF).
+function rasterizarGraficoSVG(callback){
+  const svgEl = document.querySelector("#e-chart-svg-wrap svg");
+  if(!svgEl){ callback(null); return; }
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = ()=>{
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 340;
+    const cctx = canvas.getContext("2d");
+    cctx.fillStyle = "#ffffff";
+    cctx.fillRect(0, 0, canvas.width, canvas.height);
+    cctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    callback(canvas.toDataURL("image/png"));
+  };
+  img.onerror = ()=>{
+    URL.revokeObjectURL(url);
+    callback(null);
+  };
+  img.src = url;
+}
+
+document.getElementById("e-exportar-png").addEventListener("click", ()=>{
+  rasterizarGraficoSVG((pngUrl)=>{
+    if(!pngUrl){ alert("No se pudo exportar el gráfico como imagen."); return; }
+    const a = document.createElement("a");
+    a.href = pngUrl;
+    a.download = `estadistica_${document.getElementById("e-chart-titulo").textContent.replace(/\s+/g,"_").toLowerCase()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+});
+
+document.getElementById("e-exportar-csv").addEventListener("click", ()=>{
+  const filas = Array.from(document.querySelectorAll("#e-tabla tbody tr")).map(tr=>{
+    const celdas = tr.querySelectorAll("td");
+    return [
+      celdas[0].textContent,
+      celdas[1].textContent,
+      celdas[2].textContent,
+      celdas[3].textContent.trim()
+    ];
+  });
+  const encabezado = ["Piazza","Tiempo real","Meta","% Cumplimiento"];
+  const csv = [encabezado, ...filas].map(fila=>fila.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `estadistica_${document.getElementById("e-chart-titulo").textContent.replace(/\s+/g,"_").toLowerCase()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("e-exportar-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+
+  const titulo = document.getElementById("e-chart-titulo").textContent;
+
+  rasterizarGraficoSVG((pngUrl)=>{
+    const docPDF = new JsPDF();
+    docPDF.setFontSize(15);
+    docPDF.setTextColor(15,42,68);
+    docPDF.text(titulo, 14, 16);
+    docPDF.setFontSize(9);
+    docPDF.setTextColor(90,100,110);
+    docPDF.text(document.getElementById("e-caption-filtro").textContent, 14, 22, {maxWidth:180});
+
+    let y = 30;
+    if(pngUrl){
+      const imgW = 182, imgH = imgW*(340/900);
+      docPDF.addImage(pngUrl, "PNG", 14, y, imgW, imgH);
+      y += imgH + 8;
+    }
+
+    // tabla resumen (siglas como columnas)
+    const encResumen = Array.from(document.querySelectorAll("#e-resumen-head th")).map(th=>th.textContent || "");
+    const filasResumen = Array.from(document.querySelectorAll("#e-resumen-body tr")).map(tr=>
+      Array.from(tr.querySelectorAll("td")).map(td=>td.textContent)
+    );
+    docPDF.autoTable({
+      startY: y,
+      head: [encResumen],
+      body: filasResumen,
+      styles:{ fontSize:8, halign:"center" },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+
+    y = docPDF.lastAutoTable.finalY + 8;
+
+    // tabla de detalle (piazza / real / meta / %)
+    const filasDetalle = Array.from(document.querySelectorAll("#e-tabla tbody tr")).map(tr=>{
+      const celdas = tr.querySelectorAll("td");
+      return [celdas[0].textContent, celdas[1].textContent, celdas[2].textContent, celdas[3].textContent.trim()];
+    });
+    docPDF.autoTable({
+      startY: y,
+      head: [["Piazza","Real","Meta","% Cumplimiento"]],
+      body: filasDetalle,
+      styles:{ fontSize:9 },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+
+    docPDF.save(`estadistica_${titulo.replace(/\s+/g,"_").toLowerCase()}.pdf`);
+  });
+});
+
+</script>
+
+<script>
+if('serviceWorker' in navigator && (location.hostname.includes('netlify.app') || location.hostname.includes('krause'))){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+
+</body>
+</html>

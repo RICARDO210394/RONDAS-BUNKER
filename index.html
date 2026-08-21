@@ -446,6 +446,13 @@
     cursor:default;
   }
   .cal-dia.cal-vacio:hover{transform:none;box-shadow:none;}
+  .cal-dia.cal-dia-futuro{
+    background:#ffffff;
+  }
+  .cal-numero-futuro{
+    color:var(--gris-400);
+    text-shadow:none;
+  }
   .cal-dia.cal-hoy{
     border:2px solid var(--azul-700);
   }
@@ -485,10 +492,36 @@
     justify-content:space-between;
     z-index:2;
   }
+
+  /* Color sólido por % de cumplimiento (modo "Gradiente"/porcentaje) */
+  .cal-dia-pct{background:#e9e9e9;}
+  .cal-relleno-solido{
+    position:absolute;
+    inset:0;
+    z-index:0;
+  }
+  .cal-numero-pct{
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.6);
+  }
+  .cal-pct-label{
+    position:absolute;
+    bottom:3px;
+    left:0;
+    right:0;
+    text-align:center;
+    font-size:.64rem;
+    font-weight:800;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.6);
+    z-index:2;
+  }
+
   @media(max-width:700px){
     .cal-dia{min-height:48px;}
     .cal-numero{font-size:.72rem;}
     .cal-detalle{font-size:.5rem;}
+    .cal-pct-label{font-size:.56rem;}
     .cal-encabezados div{font-size:.6rem;}
   }
 
@@ -556,6 +589,28 @@
   table.cal-detalle-tabla td{
     padding:5px 6px;
     border-bottom:1px solid var(--gris-100);
+  }
+  .cal-pct-chip{
+    display:inline-block;
+    min-width:40px;
+    text-align:center;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:.72rem;
+    font-weight:800;
+    color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  .cal-pct-chip-grande{
+    display:inline-block;
+    min-width:52px;
+    text-align:center;
+    padding:4px 10px;
+    border-radius:12px;
+    font-size:.9rem;
+    font-weight:800;
+    color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.35);
   }
   .top-fecha{
     display:flex;
@@ -1110,13 +1165,14 @@
     <div class="card card-calendario">
       <h2>Calendario de Cumplimiento</h2>
       <div class="desc">
-        Escoge el mes, y opcionalmente filtra por Piazza, Turno y Supervisor. Si dejas "Todos los turnos",
-        cada fecha se divide en dos: la mitad izquierda es <b>Diurno</b>, la mitad derecha es <b>Nocturno</b>.
-        Si escoges un turno específico, la fecha se pinta completa con ese resultado. Cuando ves
-        <b>"Todas las piazzas"</b>, el color de cada día refleja el <b>peor caso entre todas las piazzas</b>
-        (igual que en Estadística): solo sale verde si <b>todas</b> cumplieron ese día — si una sola piazza
-        no llegó a la meta, el día no se pinta verde, aunque otra piazza se haya pasado del tiempo. Haz clic
-        en cualquier fecha para ver el desglose piazza por piazza.
+        Escoge el mes, y opcionalmente filtra por Piazza, Turno y Supervisor. El desplegable
+        <b>Vista</b> te deja elegir cómo se pinta el calendario, sin importar si escogiste una Piazza
+        específica o "Todas las piazzas": con <b>"Colores por % de cumplimiento"</b>, cada día se pinta
+        de un color sólido según el % de cumplimiento de ese día (rojo 0-24%, naranja 25-49%, amarillo
+        50-74%, verde-amarillo 75-99%, verde 100%). Con <b>"Colores por turno"</b>, cada fecha se divide
+        en Diurno/Nocturno con verde/amarillo/negro según si cumplió, cumplió parcial, o no rondó (si
+        hay varias piazzas a la vez, se usa el peor caso entre todas). Haz clic en cualquier fecha para
+        ver el desglose piazza por piazza.
       </div>
 
       <div class="filtros">
@@ -1154,6 +1210,13 @@
             <option value="">Todos los supervisores</option>
           </select>
         </div>
+        <div>
+          <label>Vista</label>
+          <select id="cal-vista">
+            <option value="gradiente">Colores por % de cumplimiento</option>
+            <option value="colores">Colores por turno (Día/Noche)</option>
+          </select>
+        </div>
       </div>
 
       <div class="cal-leyenda">
@@ -1161,6 +1224,17 @@
         <span class="cal-leyenda-item"><span class="cal-chip cal-c-amarillo"></span> Rondó, pero no llegó al tiempo</span>
         <span class="cal-leyenda-item"><span class="cal-chip cal-c-negro"></span> No rondó</span>
         <span class="cal-leyenda-item"><span class="cal-chip cal-c-gris"></span> Sin meta ese día</span>
+      </div>
+      <div class="cal-leyenda" style="margin-top:2px;">
+        <span class="cal-leyenda-item">(Con Vista = "Colores por turno")</span>
+      </div>
+      <div class="cal-leyenda">
+        <span class="cal-leyenda-item"><span class="cal-chip" style="background:hsl(0,72%,46%);"></span> 0-24%</span>
+        <span class="cal-leyenda-item"><span class="cal-chip" style="background:hsl(28,75%,48%);"></span> 25-49%</span>
+        <span class="cal-leyenda-item"><span class="cal-chip" style="background:hsl(50,80%,50%);"></span> 50-74%</span>
+        <span class="cal-leyenda-item"><span class="cal-chip" style="background:hsl(85,60%,42%);"></span> 75-99%</span>
+        <span class="cal-leyenda-item"><span class="cal-chip" style="background:hsl(120,55%,38%);"></span> 100%</span>
+        <span class="cal-leyenda-item">(Con Vista = "Colores por % de cumplimiento")</span>
       </div>
 
       <div id="cal-titulo-mes" class="cal-titulo-mes"></div>
@@ -3047,7 +3121,7 @@ function claveDiaSemana(fecha){
 // mes actual por defecto
 document.getElementById("cal-mes").value = new Date().toISOString().slice(0,7);
 
-["cal-piazza","cal-mes","cal-turno","cal-supervisor"].forEach(id=>{
+["cal-piazza","cal-mes","cal-turno","cal-supervisor","cal-vista"].forEach(id=>{
   document.getElementById(id).addEventListener("change", renderCalendario);
 });
 
@@ -3095,6 +3169,7 @@ function realDelDia(piazzas, fechaStr, turno, supervisorFiltro){
 }
 
 // Calcula el estado (real, meta, color) de CADA piazza por separado, para un turno y fecha dados.
+// Funciona igual con una sola piazza o con varias — con una sola, simplemente devuelve un arreglo de 1 elemento.
 function desglosePorPiazza(piazzas, fechaStr, turno, supervisorFiltro, diaSemana){
   return piazzas.map(piazza=>{
     const meta = metaDelDia([piazza], diaSemana, turno);
@@ -3103,16 +3178,55 @@ function desglosePorPiazza(piazzas, fechaStr, turno, supervisorFiltro, diaSemana
   });
 }
 
-// Cuando se ven "Todas las piazzas", el color del día NO debe salir de sumar los minutos de todas
-// (eso puede tapar que una piazza no cumplió con el exceso de otra). En vez de eso, se usa el
-// mismo criterio que Estadística: cada Piazza se evalúa por separado, y el color del día es el
-// "peor caso" entre todas — así solo sale verde si TODAS cumplieron (o no tenían meta ese día).
+// Vista "Colores por turno" con varias piazzas: el color del día es el PEOR CASO entre todas
+// (igual que en Estadística) — solo sale verde si TODAS cumplieron. Con una sola piazza en la
+// lista, esto se reduce automáticamente al color de esa única piazza.
 function colorAgregadoDesde(desglose){
   const colores = desglose.map(d=>d.color);
   if(colores.includes("negro")) return "negro";
   if(colores.includes("amarillo")) return "amarillo";
   if(colores.includes("verde")) return "verde";
   return "gris";
+}
+
+// Cuando se ve "Todas las piazzas", en vez de un color de aprobado/no-aprobado, se calcula
+// el % de cumplimiento de CADA piazza ese día (real/meta, tope 100%; si no había meta, cuenta
+// como 100% porque no había nada que cumplir) y se promedia entre todas las piazzas.
+function desglosePorcentajePorPiazza(piazzas, fechaStr, turnoFiltro, supervisorFiltro, diaSemana){
+  return piazzas.map(piazza=>{
+    let meta, real;
+    if(turnoFiltro){
+      meta = metaDelDia([piazza], diaSemana, turnoFiltro);
+      real = realDelDia([piazza], fechaStr, turnoFiltro, supervisorFiltro);
+    }else{
+      const metaD = metaDelDia([piazza], diaSemana, "Diurno");
+      const metaN = metaDelDia([piazza], diaSemana, "Nocturno");
+      const realD = realDelDia([piazza], fechaStr, "Diurno", supervisorFiltro);
+      const realN = realDelDia([piazza], fechaStr, "Nocturno", supervisorFiltro);
+      meta = metaD + metaN;
+      real = realD + realN;
+    }
+    const ratio = meta > 0 ? Math.min(real / meta, 1) : 1;
+    return { piazza, meta, real, ratio, pct: Math.round(ratio * 100) };
+  });
+}
+
+function porcentajePromedio(desglosePct){
+  if(!desglosePct.length) return 100;
+  const promedio = desglosePct.reduce((s,d)=>s+d.ratio, 0) / desglosePct.length;
+  return Math.round(promedio * 100);
+}
+
+// Color sólido según el % (por bandas, sin degradado): 0%=rojo, 25%=naranja, 50%=amarillo,
+// 75%=verde-amarillo, 100%=verde. Se usa para pintar el día completo, y también en el detalle
+// y en la exportación, para que todo se vea consistente.
+function colorEscalaPorcentaje(pct){
+  const p = Math.max(0, Math.min(100, pct));
+  if(p >= 100) return "hsl(120, 55%, 38%)"; // verde
+  if(p >= 75)  return "hsl(85, 60%, 42%)";  // verde-amarillo
+  if(p >= 50)  return "hsl(50, 80%, 50%)";  // amarillo
+  if(p >= 25)  return "hsl(28, 75%, 48%)";  // naranja
+  return "hsl(0, 72%, 46%)";                // rojo
 }
 
 let CAL_CONTEXTO = null; // guarda los datos del mes actualmente renderizado, para el clic y la exportación
@@ -3125,6 +3239,7 @@ function renderCalendario(){
   const mesVal = document.getElementById("cal-mes").value;
   const turnoFiltro = document.getElementById("cal-turno").value; // "" = todos, o "Diurno"/"Nocturno"
   const supervisorFiltro = document.getElementById("cal-supervisor").value;
+  const vista = document.getElementById("cal-vista").value; // "gradiente" o "colores"
   const titulo = document.getElementById("cal-titulo-mes");
   const grid = document.getElementById("cal-grid");
 
@@ -3139,6 +3254,7 @@ function renderCalendario(){
   }
 
   const piazzasConsideradas = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
+  const varias = piazzasConsideradas.length > 1;
 
   const [yearStr, monthStr] = mesVal.split("-");
   const year = Number(yearStr);
@@ -3147,7 +3263,8 @@ function renderCalendario(){
   const etiquetaPiazza = piazzaFiltro || "Todas las Piazzas";
   const etiquetaTurno = turnoFiltro ? ` · ${turnoFiltro}` : "";
   const etiquetaSupervisor = supervisorFiltro ? ` · ${supervisorFiltro}` : "";
-  const tituloTexto = `${MESES[monthIndex].toUpperCase()} ${year} · ${etiquetaPiazza}${etiquetaTurno}${etiquetaSupervisor}`;
+  const etiquetaVista = vista === "gradiente" ? " · Gradiente %" : " · Colores";
+  const tituloTexto = `${MESES[monthIndex].toUpperCase()} ${year} · ${etiquetaPiazza}${etiquetaTurno}${etiquetaSupervisor}${etiquetaVista}`;
   titulo.textContent = tituloTexto;
 
   const primerDia = new Date(year, monthIndex, 1);
@@ -3157,7 +3274,7 @@ function renderCalendario(){
   const hoyStr = new Date().toISOString().slice(0,10);
 
   CAL_CONTEXTO = {
-    piazzaFiltro, piazzasConsideradas, mesVal, year, monthIndex, turnoFiltro, supervisorFiltro,
+    piazzaFiltro, piazzasConsideradas, mesVal, year, monthIndex, turnoFiltro, supervisorFiltro, vista,
     etiquetaPiazza, etiquetaTurno, etiquetaSupervisor, tituloTexto, offsetInicio, diasEnMes
   };
   CAL_DATOS_DIA = {};
@@ -3172,18 +3289,40 @@ function renderCalendario(){
     const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const diaSemana = claveDiaSemana(fechaObj);
     const esHoy = fechaStr === hoyStr;
+    const esFuturo = fechaStr > hoyStr;
 
-    if(turnoFiltro){
-      // Un solo turno escogido: la fecha se pinta completa (sin dividir)
+    if(esFuturo){
+      // Día que aún no ha pasado: no hay nada que evaluar todavía, se muestra en blanco/neutro.
+      CAL_DATOS_DIA[fechaStr] = { dia:d, futuro:true };
+      celdasHTML += `<div class="cal-dia cal-dia-futuro" data-fecha="${fechaStr}" title="Este día aún no ha llegado">
+        <div class="cal-numero cal-numero-futuro">${d}</div>
+      </div>`;
+      continue;
+    }
+
+    if(vista === "gradiente"){
+      // Vista "Colores por % de cumplimiento": color sólido por bandas (rojo->naranja->amarillo->verde).
+      // Funciona igual con una Piazza específica (el % es el de esa única piazza) o con "Todas".
+      const desglosePct = desglosePorcentajePorPiazza(piazzasConsideradas, fechaStr, turnoFiltro, supervisorFiltro, diaSemana);
+      const pct = porcentajePromedio(desglosePct);
+      const colorSolido = colorEscalaPorcentaje(pct);
+
+      CAL_DATOS_DIA[fechaStr] = { dia:d, modoPorcentaje:true, porcentaje:pct, desglose: desglosePct, turnoFiltro };
+
+      celdasHTML += `<div class="cal-dia cal-dia-pct${esHoy?" cal-hoy":""}" data-fecha="${fechaStr}" title="Cumplimiento: ${pct}% — clic para ver detalle">
+        <div class="cal-relleno-solido" style="background:${colorSolido}"></div>
+        <div class="cal-numero cal-numero-pct">${d}</div>
+        <div class="cal-pct-label">${pct}%</div>
+      </div>`;
+    }else if(turnoFiltro){
+      // Vista "Colores" + un solo turno escogido: la fecha se pinta completa (sin dividir).
+      // Con varias piazzas, el color es el PEOR CASO entre todas (igual que en Estadística).
       const desglose = desglosePorPiazza(piazzasConsideradas, fechaStr, turnoFiltro, supervisorFiltro, diaSemana);
-      const color = piazzaFiltro ? desglose[0].color : colorAgregadoDesde(desglose);
+      const color = colorAgregadoDesde(desglose);
       const meta = desglose.reduce((s,x)=>s+x.meta, 0);
       const real = desglose.reduce((s,x)=>s+x.real, 0);
 
-      CAL_DATOS_DIA[fechaStr] = {
-        dia:d, soloUnTurno:true, turno:turnoFiltro, meta, real, color,
-        desglose: piazzaFiltro ? null : desglose
-      };
+      CAL_DATOS_DIA[fechaStr] = { dia:d, soloUnTurno:true, turno:turnoFiltro, meta, real, color, desglose: desglose };
 
       celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" data-fecha="${fechaStr}" title="${turnoFiltro}: ${minAHoras(real)} de ${minAHoras(meta)} (clic para ver detalle)">
         <div class="cal-mitades">
@@ -3193,12 +3332,12 @@ function renderCalendario(){
         <div class="cal-numero">${d}</div>
       </div>`;
     }else{
-      // Todos los turnos: la fecha se divide en Diurno (izquierda) y Nocturno (derecha)
+      // Vista "Colores" + todos los turnos: la fecha se divide en Diurno (izquierda) y Nocturno (derecha).
       const desgloseDiurno = desglosePorPiazza(piazzasConsideradas, fechaStr, "Diurno", supervisorFiltro, diaSemana);
       const desgloseNocturno = desglosePorPiazza(piazzasConsideradas, fechaStr, "Nocturno", supervisorFiltro, diaSemana);
 
-      const colorIzq = piazzaFiltro ? desgloseDiurno[0].color : colorAgregadoDesde(desgloseDiurno);
-      const colorDer = piazzaFiltro ? desgloseNocturno[0].color : colorAgregadoDesde(desgloseNocturno);
+      const colorIzq = colorAgregadoDesde(desgloseDiurno);
+      const colorDer = colorAgregadoDesde(desgloseNocturno);
 
       const metaDiurno = desgloseDiurno.reduce((s,x)=>s+x.meta, 0);
       const realDiurno = desgloseDiurno.reduce((s,x)=>s+x.real, 0);
@@ -3207,8 +3346,8 @@ function renderCalendario(){
 
       CAL_DATOS_DIA[fechaStr] = {
         dia:d, soloUnTurno:false,
-        metaDiurno, realDiurno, colorIzq, desgloseDiurno: piazzaFiltro ? null : desgloseDiurno,
-        metaNocturno, realNocturno, colorDer, desgloseNocturno: piazzaFiltro ? null : desgloseNocturno
+        metaDiurno, realDiurno, colorIzq, desgloseDiurno: desgloseDiurno,
+        metaNocturno, realNocturno, colorDer, desgloseNocturno: desgloseNocturno
       };
 
       celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" data-fecha="${fechaStr}" title="Diurno: ${minAHoras(realDiurno)} de ${minAHoras(metaDiurno)} · Nocturno: ${minAHoras(realNocturno)} de ${minAHoras(metaNocturno)} (clic para ver detalle)">
@@ -3246,12 +3385,31 @@ function mostrarDetalleDia(fechaStr){
   const panel = document.getElementById("cal-detalle-dia");
   const contenido = document.getElementById("cal-detalle-contenido");
 
+  if(datos.futuro){
+    contenido.innerHTML = `
+      <div class="cal-detalle-titulo">${fechaBonita(fechaStr)}</div>
+      <div class="vacio">Este día aún no ha llegado — no hay nada que evaluar todavía.</div>
+    `;
+    panel.style.display = "block";
+    panel.scrollIntoView({behavior:"smooth", block:"nearest"});
+    return;
+  }
+
   function filaDesglose(d){
     return `<tr>
       <td>${SIGLAS[d.piazza]||d.piazza}</td>
       <td>${minAHoras(d.real)}</td>
       <td>${minAHoras(d.meta)}</td>
       <td><span class="pill ${d.color==='verde'?'ok':(d.color==='amarillo'?'warn':'bad')}">${ETIQUETA_COLOR[d.color]}</span></td>
+    </tr>`;
+  }
+
+  function filaDesglosePct(d){
+    return `<tr>
+      <td>${SIGLAS[d.piazza]||d.piazza}</td>
+      <td>${minAHoras(d.real)}</td>
+      <td>${minAHoras(d.meta)}</td>
+      <td><span class="cal-pct-chip" style="background:${colorEscalaPorcentaje(d.pct)}">${d.pct}%</span></td>
     </tr>`;
   }
 
@@ -3265,12 +3423,30 @@ function mostrarDetalleDia(fechaStr){
     </div>`;
   }
 
+  function tablaDesglosePct(titulo, desglose){
+    return `<div style="margin-bottom:10px;">
+      <div style="font-weight:700;font-size:.78rem;color:var(--gris-600);margin-bottom:4px;text-transform:uppercase;">${titulo} · por Piazza</div>
+      <table class="cal-detalle-tabla">
+        <thead><tr><th>Piazza</th><th>Real</th><th>Meta</th><th>%</th></tr></thead>
+        <tbody>${desglose.map(filaDesglosePct).join("")}</tbody>
+      </table>
+    </div>`;
+  }
+
   let chipsHTML = "";
   let desgloseHTML = "";
 
-  if(datos.soloUnTurno){
+  const varias = CAL_CONTEXTO.piazzasConsideradas.length > 1;
+
+  if(datos.modoPorcentaje){
+    const colorPct = colorEscalaPorcentaje(datos.porcentaje);
+    chipsHTML = `<div class="cal-detalle-estado"><span class="cal-pct-chip-grande" style="background:${colorPct}">${datos.porcentaje}%</span> Cumplimiento${varias ? " promedio del día, entre todas las piazzas" : " del día"}${datos.turnoFiltro ? " (" + datos.turnoFiltro + ")" : " (Diurno + Nocturno)"}</div>`;
+    if(varias){
+      desgloseHTML = tablaDesglosePct(datos.turnoFiltro || "Diurno + Nocturno", datos.desglose);
+    }
+  }else if(datos.soloUnTurno){
     chipsHTML = `<div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.color}"></span> ${datos.turno}: ${minAHoras(datos.real)} de ${minAHoras(datos.meta)} — ${ETIQUETA_COLOR[datos.color]}</div>`;
-    if(datos.desglose){
+    if(varias){
       desgloseHTML = tablaDesglose(datos.turno, datos.desglose);
     }
   }else{
@@ -3278,9 +3454,8 @@ function mostrarDetalleDia(fechaStr){
       <div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.colorIzq}"></span> Diurno: ${minAHoras(datos.realDiurno)} de ${minAHoras(datos.metaDiurno)} — ${ETIQUETA_COLOR[datos.colorIzq]}</div>
       <div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.colorDer}"></span> Nocturno: ${minAHoras(datos.realNocturno)} de ${minAHoras(datos.metaNocturno)} — ${ETIQUETA_COLOR[datos.colorDer]}</div>
     `;
-    if(datos.desgloseDiurno || datos.desgloseNocturno){
-      desgloseHTML = (datos.desgloseDiurno ? tablaDesglose("Diurno", datos.desgloseDiurno) : "")
-                   + (datos.desgloseNocturno ? tablaDesglose("Nocturno", datos.desgloseNocturno) : "");
+    if(varias){
+      desgloseHTML = tablaDesglose("Diurno", datos.desgloseDiurno) + tablaDesglose("Nocturno", datos.desgloseNocturno);
     }
   }
 
@@ -3371,14 +3546,23 @@ function construirSVGCalendario(){
     const datos = CAL_DATOS_DIA[fechaStr];
     if(!datos) continue;
 
-    if(datos.soloUnTurno){
+    if(datos.futuro){
+      svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="#ffffff" stroke="#ddd"/>`;
+      svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#9aa4ae">${d}</text>`;
+    }else if(datos.modoPorcentaje){
+      const pct = datos.porcentaje;
+      svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="${colorEscalaPorcentaje(pct)}" stroke="#ddd"/>`;
+      svg += `<text x="${x+celdaW/2}" y="${y+celdaH-8}" font-size="10.5" font-weight="800" fill="#fff" stroke="#000" stroke-width="1.5" stroke-opacity="0.3" paint-order="stroke" text-anchor="middle">${pct}%</text>`;
+      svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#fff" stroke="#000" stroke-width="2" stroke-opacity="0.35" paint-order="stroke">${d}</text>`;
+    }else if(datos.soloUnTurno){
       svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="${coloresHexCalendario(datos.color)}" stroke="#ddd"/>`;
+      svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#fff" stroke="#000" stroke-width="2" stroke-opacity="0.35" paint-order="stroke">${d}</text>`;
     }else{
       svg += `<rect x="${x}" y="${y}" width="${celdaW/2}" height="${celdaH}" fill="${coloresHexCalendario(datos.colorIzq)}"/>`;
       svg += `<rect x="${x+celdaW/2}" y="${y}" width="${celdaW/2}" height="${celdaH}" fill="${coloresHexCalendario(datos.colorDer)}"/>`;
       svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="none" stroke="#ddd"/>`;
+      svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#fff" stroke="#000" stroke-width="2" stroke-opacity="0.35" paint-order="stroke">${d}</text>`;
     }
-    svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#fff" stroke="#000" stroke-width="2" stroke-opacity="0.35" paint-order="stroke">${d}</text>`;
   }
 
   svg += `</svg>`;
@@ -3443,23 +3627,41 @@ document.getElementById("cal-exportar-pdf").addEventListener("click", ()=>{
       y += imgH + 8;
     }
 
-    const { year, monthIndex, diasEnMes } = CAL_CONTEXTO;
+    const { year, monthIndex, diasEnMes, vista } = CAL_CONTEXTO;
     const filasTabla = [];
-    for(let d=1; d<=diasEnMes; d++){
-      const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const datos = CAL_DATOS_DIA[fechaStr];
-      if(!datos) continue;
-      if(datos.soloUnTurno){
-        filasTabla.push([fechaCorta(fechaStr), datos.turno, minAHoras(datos.real), minAHoras(datos.meta), ETIQUETA_COLOR[datos.color]]);
-      }else{
-        filasTabla.push([fechaCorta(fechaStr), "Diurno", minAHoras(datos.realDiurno), minAHoras(datos.metaDiurno), ETIQUETA_COLOR[datos.colorIzq]]);
-        filasTabla.push(["", "Nocturno", minAHoras(datos.realNocturno), minAHoras(datos.metaNocturno), ETIQUETA_COLOR[datos.colorDer]]);
+    let encabezadoTabla;
+
+    if(vista === "gradiente"){
+      // Vista "Gradiente": una fila de promedio del día + desglose por Piazza debajo
+      encabezadoTabla = ["Fecha","Piazza","Real","Meta","%"];
+      for(let d=1; d<=diasEnMes; d++){
+        const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const datos = CAL_DATOS_DIA[fechaStr];
+        if(!datos || datos.futuro) continue;
+        filasTabla.push([fechaCorta(fechaStr), "— Promedio del día —", "", "", `${datos.porcentaje}%`]);
+        datos.desglose.forEach(dp=>{
+          filasTabla.push(["", SIGLAS[dp.piazza]||dp.piazza, minAHoras(dp.real), minAHoras(dp.meta), `${dp.pct}%`]);
+        });
+      }
+    }else{
+      // Vista "Colores": color de aprobado/no-aprobado por turno
+      encabezadoTabla = ["Fecha","Turno","Real","Meta","Estado"];
+      for(let d=1; d<=diasEnMes; d++){
+        const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const datos = CAL_DATOS_DIA[fechaStr];
+        if(!datos || datos.futuro) continue;
+        if(datos.soloUnTurno){
+          filasTabla.push([fechaCorta(fechaStr), datos.turno, minAHoras(datos.real), minAHoras(datos.meta), ETIQUETA_COLOR[datos.color]]);
+        }else{
+          filasTabla.push([fechaCorta(fechaStr), "Diurno", minAHoras(datos.realDiurno), minAHoras(datos.metaDiurno), ETIQUETA_COLOR[datos.colorIzq]]);
+          filasTabla.push(["", "Nocturno", minAHoras(datos.realNocturno), minAHoras(datos.metaNocturno), ETIQUETA_COLOR[datos.colorDer]]);
+        }
       }
     }
 
     docPDF.autoTable({
       startY: y,
-      head: [["Fecha","Turno","Real","Meta","Estado"]],
+      head: [encabezadoTabla],
       body: filasTabla,
       styles:{ fontSize:8 },
       headStyles:{ fillColor:[15,42,68] }

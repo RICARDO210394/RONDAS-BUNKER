@@ -104,7 +104,9 @@
     max-width:980px;
     margin:0 auto;
     padding:16px;
+    transition:max-width .15s ease;
   }
+  main.main-ancho{max-width:1400px;}
   .panel{display:none;}
   .panel.active{display:block;animation:fadein .15s ease;}
   @keyframes fadein{from{opacity:0}to{opacity:1}}
@@ -372,6 +374,112 @@
     user-select:none;
   }
   .checkbox-sumar input{width:auto;cursor:pointer;}
+
+  /* ===================== CALENDARIO ===================== */
+  .card-calendario{max-width:100%;}
+  .cal-leyenda{
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    margin:14px 0 4px;
+    font-size:.8rem;
+    color:var(--gris-600);
+  }
+  .cal-leyenda-item{display:flex;align-items:center;gap:6px;}
+  .cal-chip{
+    display:inline-block;
+    width:16px;height:16px;
+    border-radius:4px;
+    border:1px solid rgba(0,0,0,.15);
+  }
+  .cal-c-verde{background:#2fa84f;}
+  .cal-c-amarillo{background:#f2c744;}
+  .cal-c-negro{background:#1a1a1a;}
+  .cal-c-gris{background:#d9d9d9;}
+
+  .cal-titulo-mes{
+    text-align:center;
+    font-size:1.3rem;
+    font-weight:800;
+    color:var(--azul-900);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin:18px 0 10px;
+  }
+  .cal-encabezados{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .cal-encabezados div{
+    text-align:center;
+    font-weight:700;
+    font-size:.8rem;
+    color:var(--gris-600);
+    text-transform:uppercase;
+  }
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+  }
+  .cal-dia{
+    position:relative;
+    min-height:110px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--gris-200);
+  }
+  .cal-dia.cal-vacio{
+    border:none;
+    background:transparent;
+  }
+  .cal-dia.cal-hoy{
+    border:2px solid var(--azul-700);
+  }
+  .cal-mitades{
+    position:absolute;
+    inset:0;
+    display:flex;
+  }
+  .cal-mitad{
+    flex:1 1 50%;
+    height:100%;
+  }
+  .cal-c-verde.cal-mitad{background:#2fa84f;}
+  .cal-c-amarillo.cal-mitad{background:#f2c744;}
+  .cal-c-negro.cal-mitad{background:#1a1a1a;}
+  .cal-c-gris.cal-mitad{background:#e6e6e6;}
+  .cal-numero{
+    position:absolute;
+    top:6px;
+    left:8px;
+    font-size:1.2rem;
+    font-weight:800;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.6);
+    z-index:2;
+  }
+  .cal-detalle{
+    position:absolute;
+    bottom:5px;
+    left:6px;
+    right:6px;
+    font-size:.62rem;
+    font-weight:700;
+    color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.7);
+    display:flex;
+    justify-content:space-between;
+    z-index:2;
+  }
+  @media(max-width:700px){
+    .cal-dia{min-height:70px;}
+    .cal-numero{font-size:.95rem;}
+    .cal-detalle{font-size:.55rem;}
+    .cal-encabezados div{font-size:.65rem;}
+  }
   .top-fecha{
     display:flex;
     justify-content:space-between;
@@ -607,6 +715,7 @@
     <button class="tab-btn" data-tab="estadistica">Estadística</button>
     <button class="tab-btn" data-tab="parametros">Parámetros</button>
     <button class="tab-btn" data-tab="resumen">Resumen</button>
+    <button class="tab-btn" data-tab="calendario">Calendario</button>
   </nav>
 </div>
 
@@ -852,7 +961,7 @@
         <div>
           <label>Piazza</label>
           <select id="res-piazza">
-            <option value="">Selecciona...</option>
+            <option value="">Todas las piazzas</option>
             <option>Bosques</option>
             <option>Ceibos</option>
             <option>Ciudad Celeste</option>
@@ -916,6 +1025,68 @@
       <div style="overflow-x:auto;margin-top:12px;">
         <table class="rondas resumen-tabla-principal" id="res-tabla" style="width:100%;"></table>
       </div>
+    </div>
+  </section>
+
+  <!-- ================= PESTAÑA 6: CALENDARIO ================= -->
+  <section id="panel-calendario" class="panel">
+    <div class="card card-calendario">
+      <h2>Calendario de Cumplimiento</h2>
+      <div class="desc">
+        Escoge el mes, y opcionalmente filtra por Piazza, Turno y Supervisor. Si dejas "Todos los turnos",
+        cada fecha se divide en dos: la mitad izquierda es <b>Diurno</b>, la mitad derecha es <b>Nocturno</b>.
+        Si escoges un turno específico, la fecha se pinta completa con ese resultado.
+      </div>
+
+      <div class="filtros">
+        <div>
+          <label>Piazza</label>
+          <select id="cal-piazza">
+            <option value="">Todas las piazzas</option>
+            <option>Bosques</option>
+            <option>Ceibos</option>
+            <option>Ciudad Celeste</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Murano</option>
+            <option>Palmar</option>
+            <option>Samborondón</option>
+            <option>Villa Club</option>
+            <option>Villas del Rey</option>
+          </select>
+        </div>
+        <div>
+          <label>Mes</label>
+          <input type="month" id="cal-mes">
+        </div>
+        <div>
+          <label>Turno</label>
+          <select id="cal-turno">
+            <option value="">Todos los turnos</option>
+            <option>Diurno</option>
+            <option>Nocturno</option>
+          </select>
+        </div>
+        <div>
+          <label>Supervisor</label>
+          <select id="cal-supervisor">
+            <option value="">Todos los supervisores</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cal-leyenda">
+        <span class="cal-leyenda-item"><span class="cal-chip cal-c-verde"></span> Cumplió la meta</span>
+        <span class="cal-leyenda-item"><span class="cal-chip cal-c-amarillo"></span> Rondó, pero no llegó al tiempo</span>
+        <span class="cal-leyenda-item"><span class="cal-chip cal-c-negro"></span> No rondó</span>
+        <span class="cal-leyenda-item"><span class="cal-chip cal-c-gris"></span> Sin meta ese día</span>
+      </div>
+
+      <div id="cal-titulo-mes" class="cal-titulo-mes"></div>
+      <div class="cal-encabezados">
+        <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
     </div>
   </section>
 
@@ -989,12 +1160,18 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
     btn.classList.add("active");
     document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
 
+    // El calendario necesita más espacio horizontal para verse grande.
+    document.querySelector("main").classList.toggle("main-ancho", btn.dataset.tab === "calendario");
+
     // Refresca Estadística al entrar a la pestaña (por si cambiaron datos mientras tanto).
     if(btn.dataset.tab === "estadistica" && typeof renderEstadistica === "function"){
       renderEstadistica();
     }
     if(btn.dataset.tab === "resumen" && typeof renderResumen === "function"){
       renderResumen();
+    }
+    if(btn.dataset.tab === "calendario" && typeof renderCalendario === "function"){
+      renderCalendario();
     }
   });
 });
@@ -1500,6 +1677,7 @@ function renderTodo(){
   poblarSupervisoresEstadistica();
   renderEstadistica();
   if(typeof renderResumen === "function") renderResumen();
+  if(typeof renderCalendario === "function") renderCalendario();
 }
 
 const qRondas = query(collection(db, RONDAS_COL), orderBy("fecha","desc"));
@@ -1795,6 +1973,7 @@ async function cargarParametros(){
   }
   renderParametros();
   renderEstadistica();
+  if(typeof renderCalendario === "function") renderCalendario();
 }
 
 function selectParPara(piazza, turno, diaKey, minutosActuales){
@@ -1973,6 +2152,7 @@ async function guardarPiazzaParametros(piazza, det){
     flag.classList.add("show");
     setTimeout(()=>flag.classList.remove("show"), 1500);
     renderEstadistica();
+    if(typeof renderCalendario === "function") renderCalendario();
   }catch(e){
     console.error("Error al guardar parámetros de "+piazza+":", e);
     const flag = det.querySelector(".guardado-flag");
@@ -2085,10 +2265,10 @@ function filtrarRegistrosResumen(){
   const supervisorFiltro = document.getElementById("res-supervisor").value;
   const operadorFiltro = document.getElementById("res-operador").value;
 
-  if(!piazza || !mesVal) return null;
+  if(!mesVal) return null;
 
   const filtradas = RONDAS.filter(r=>{
-    if(r.piazza !== piazza) return false;
+    if(piazza && r.piazza !== piazza) return false;
     if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
     if(turnoFiltro && r.turno !== turnoFiltro) return false;
     if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
@@ -2097,6 +2277,8 @@ function filtrarRegistrosResumen(){
   });
 
   filtradas.sort((a,b)=>{
+    const pa = PIAZZAS.indexOf(a.piazza), pb = PIAZZAS.indexOf(b.piazza);
+    if(pa !== pb) return pa - pb;
     if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
     return (a.ingreso||"").localeCompare(b.ingreso||"");
   });
@@ -2165,12 +2347,15 @@ function renderResumen(){
   document.getElementById("res-total-diurno-nocturno").textContent = `${minAHoras(totalDiurno)} / ${minAHoras(totalNocturno)}`;
 
   if(filtradas.length === 0){
-    tabla.innerHTML = `<tbody><tr><td style="text-align:center;padding:14px;color:var(--gris-400);font-style:italic;">Sin rondas registradas para ${piazza} con estos filtros.</td></tr></tbody>`;
+    const etiquetaPiazza = piazza || "ninguna Piazza (todas)";
+    tabla.innerHTML = `<tbody><tr><td style="text-align:center;padding:14px;color:var(--gris-400);font-style:italic;">Sin rondas registradas para ${etiquetaPiazza} con estos filtros.</td></tr></tbody>`;
     return;
   }
 
   if(sumarActivo){
-    const agrupadas = agruparParaSumar(filtradas);
+    // Si hay una Piazza específica seleccionada, agrupamos solo por Fecha (una fila por día).
+    // Si es "Todas las piazzas", agrupamos por Piazza+Fecha para no mezclar piazzas distintas.
+    const agrupadas = piazza ? agruparParaSumar(filtradas) : agruparParaSumarMultiPiazza(filtradas);
     tabla.innerHTML = `
       <thead>
         <tr>
@@ -2250,7 +2435,7 @@ function renderResumen(){
 document.getElementById("res-exportar-csv").addEventListener("click", ()=>{
   const piazza = document.getElementById("res-piazza").value;
   const mesVal = document.getElementById("res-mes").value;
-  if(!piazza || !mesVal){ alert("Escoge una Piazza y un mes primero."); return; }
+  if(!mesVal){ alert("Escoge un mes primero."); return; }
 
   const filtradas = filtrarRegistrosResumen() || [];
 
@@ -2261,7 +2446,8 @@ document.getElementById("res-exportar-csv").addEventListener("click", ()=>{
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `resumen_${piazza.replace(/\s+/g,"")}_${mesVal}.csv`;
+  const etiquetaArchivo = piazza ? piazza.replace(/\s+/g,"") : "TODAS_PIAZZAS";
+  a.download = `resumen_${etiquetaArchivo}_${mesVal}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -2274,29 +2460,31 @@ document.getElementById("res-exportar-pdf").addEventListener("click", ()=>{
 
   const piazza = document.getElementById("res-piazza").value;
   const mesVal = document.getElementById("res-mes").value;
-  if(!piazza || !mesVal){ alert("Escoge una Piazza y un mes primero."); return; }
+  if(!mesVal){ alert("Escoge un mes primero."); return; }
 
   const filtradas = filtrarRegistrosResumen() || [];
 
   const [yearStr, monthStr] = mesVal.split("-");
   const etiquetaMes = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+  const etiquetaPiazza = piazza || "Todas las Piazzas";
 
   const docPDF = new JsPDF();
   docPDF.setFontSize(14);
-  docPDF.text(`Resumen de Rondas — ${piazza} — ${etiquetaMes}`, 14, 16);
+  docPDF.text(`Resumen de Rondas — ${etiquetaPiazza} — ${etiquetaMes}`, 14, 16);
   docPDF.setFontSize(9);
   docPDF.setTextColor(90,100,110);
   docPDF.text(`Total de rondas: ${filtradas.length}`, 14, 22);
 
   docPDF.autoTable({
     startY: 28,
-    head: [["Fecha","Turno","Supervisor","Ingreso","Salida","Tiempo","Operador"]],
-    body: filtradas.map(r=>[fechaCorta(r.fecha), r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||"—"]),
+    head: [["Fecha","Piazza","Turno","Supervisor","Ingreso","Salida","Tiempo","Operador"]],
+    body: filtradas.map(r=>[fechaCorta(r.fecha), r.piazza, r.turno, r.supervisor, r.ingreso, r.salida, minAHoras(r.minutos||0), r.operador||"—"]),
     styles:{ fontSize:8 },
     headStyles:{ fillColor:[15,42,68] }
   });
 
-  docPDF.save(`resumen_${piazza.replace(/\s+/g,"")}_${mesVal}.pdf`);
+  const etiquetaArchivo = piazza ? piazza.replace(/\s+/g,"") : "TODAS_PIAZZAS";
+  docPDF.save(`resumen_${etiquetaArchivo}_${mesVal}.pdf`);
 });
 
 /* ---- Exportar MES COMPLETO (todas las Piazzas juntas), sin depender del filtro de Piazza ---- */
@@ -2758,6 +2946,153 @@ document.getElementById("e-exportar-pdf").addEventListener("click", ()=>{
     docPDF.save(`estadistica_${titulo.replace(/\s+/g,"_").toLowerCase()}.pdf`);
   });
 });
+
+/* ===================================================================
+   PESTAÑA 6: CALENDARIO DE CUMPLIMIENTO
+=================================================================== */
+const DIAS_SEMANA_POR_GETDAY = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
+
+function claveDiaSemana(fecha){
+  return DIAS_SEMANA_POR_GETDAY[fecha.getDay()];
+}
+
+// mes actual por defecto
+document.getElementById("cal-mes").value = new Date().toISOString().slice(0,7);
+
+["cal-piazza","cal-mes","cal-turno","cal-supervisor"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", renderCalendario);
+});
+
+function poblarSupervisorCalendario(){
+  const sel = document.getElementById("cal-supervisor");
+  const actual = sel.value;
+  const supervisores = Array.from(new Set(RONDAS.map(r=>r.supervisor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = `<option value="">Todos los supervisores</option>` +
+    supervisores.map(n=>`<option ${n===actual?"selected":""}>${n}</option>`).join("");
+}
+
+// Determina el color de un turno (o de un día completo, si se filtró a un solo turno).
+//  - Sin meta ese día  + no rondó  -> gris (nada que cumplir)
+//  - Sin meta ese día  + sí rondó  -> verde (cumplió de más)
+//  - Con meta          + no rondó  -> negro (no rondó)
+//  - Con meta          + cumplió   -> verde
+//  - Con meta          + rondó pero no alcanzó -> amarillo
+function colorDeTurno(realMin, metaMin){
+  if(metaMin <= 0){
+    return realMin > 0 ? "verde" : "gris";
+  }
+  if(realMin <= 0) return "negro";
+  if(realMin >= metaMin) return "verde";
+  return "amarillo";
+}
+
+// Suma los minutos meta de un turno, para una lista de piazzas, en un día de semana dado.
+function metaDelDia(piazzas, diaSemana, turno){
+  return piazzas.reduce((total, piazza)=>{
+    const p = PARAMETROS[piazza] || { diurno: vacioSemana(), nocturno: vacioSemana() };
+    const datosTurno = (turno==="Diurno" ? p.diurno : p.nocturno) || vacioSemana();
+    return total + (datosTurno[diaSemana] || 0);
+  }, 0);
+}
+
+// Suma los minutos reales rondados ese día, para una lista de piazzas, un turno (o ambos) y un supervisor (opcional).
+function realDelDia(piazzas, fechaStr, turno, supervisorFiltro){
+  return RONDAS.filter(r=>{
+    if(!piazzas.includes(r.piazza)) return false;
+    if(r.fecha !== fechaStr) return false;
+    if(turno && r.turno !== turno) return false;
+    if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+    return true;
+  }).reduce((s,r)=>s+(r.minutos||0),0);
+}
+
+function renderCalendario(){
+  poblarSupervisorCalendario();
+
+  const piazzaFiltro = document.getElementById("cal-piazza").value;
+  const mesVal = document.getElementById("cal-mes").value;
+  const turnoFiltro = document.getElementById("cal-turno").value; // "" = todos, o "Diurno"/"Nocturno"
+  const supervisorFiltro = document.getElementById("cal-supervisor").value;
+  const titulo = document.getElementById("cal-titulo-mes");
+  const grid = document.getElementById("cal-grid");
+
+  if(!mesVal){
+    titulo.textContent = "";
+    grid.innerHTML = `<div class="vacio" style="grid-column:1/-1;text-align:center;padding:20px;">Escoge un mes para ver el calendario.</div>`;
+    return;
+  }
+
+  const piazzasConsideradas = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
+
+  const [yearStr, monthStr] = mesVal.split("-");
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStr) - 1;
+
+  const etiquetaPiazza = piazzaFiltro || "Todas las Piazzas";
+  const etiquetaTurno = turnoFiltro ? ` · ${turnoFiltro}` : "";
+  const etiquetaSupervisor = supervisorFiltro ? ` · ${supervisorFiltro}` : "";
+  titulo.textContent = `${MESES[monthIndex].toUpperCase()} ${year} · ${etiquetaPiazza}${etiquetaTurno}${etiquetaSupervisor}`;
+
+  const primerDia = new Date(year, monthIndex, 1);
+  const diasEnMes = new Date(year, monthIndex+1, 0).getDate();
+  const offsetInicio = (primerDia.getDay() + 6) % 7; // 0 = lunes
+
+  const hoyStr = new Date().toISOString().slice(0,10);
+
+  let celdasHTML = "";
+  for(let i=0; i<offsetInicio; i++){
+    celdasHTML += `<div class="cal-dia cal-vacio"></div>`;
+  }
+
+  for(let d=1; d<=diasEnMes; d++){
+    const fechaObj = new Date(year, monthIndex, d);
+    const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const diaSemana = claveDiaSemana(fechaObj);
+    const esHoy = fechaStr === hoyStr;
+
+    if(turnoFiltro){
+      // Un solo turno escogido: la fecha se pinta completa (sin dividir)
+      const meta = metaDelDia(piazzasConsideradas, diaSemana, turnoFiltro);
+      const real = realDelDia(piazzasConsideradas, fechaStr, turnoFiltro, supervisorFiltro);
+      const color = colorDeTurno(real, meta);
+
+      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" title="${turnoFiltro}: ${minAHoras(real)} de ${minAHoras(meta)}">
+        <div class="cal-mitades">
+          <div class="cal-mitad cal-c-${color}"></div>
+          <div class="cal-mitad cal-c-${color}"></div>
+        </div>
+        <div class="cal-numero">${d}</div>
+      </div>`;
+    }else{
+      // Todos los turnos: la fecha se divide en Diurno (izquierda) y Nocturno (derecha)
+      const metaDiurno = metaDelDia(piazzasConsideradas, diaSemana, "Diurno");
+      const metaNocturno = metaDelDia(piazzasConsideradas, diaSemana, "Nocturno");
+      const realDiurno = realDelDia(piazzasConsideradas, fechaStr, "Diurno", supervisorFiltro);
+      const realNocturno = realDelDia(piazzasConsideradas, fechaStr, "Nocturno", supervisorFiltro);
+
+      const colorIzq = colorDeTurno(realDiurno, metaDiurno);
+      const colorDer = colorDeTurno(realNocturno, metaNocturno);
+
+      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" title="Diurno: ${minAHoras(realDiurno)} de ${minAHoras(metaDiurno)} · Nocturno: ${minAHoras(realNocturno)} de ${minAHoras(metaNocturno)}">
+        <div class="cal-mitades">
+          <div class="cal-mitad cal-c-${colorIzq}"></div>
+          <div class="cal-mitad cal-c-${colorDer}"></div>
+        </div>
+        <div class="cal-numero">${d}</div>
+        <div class="cal-detalle"><span>D</span><span>N</span></div>
+      </div>`;
+    }
+  }
+
+  const totalCeldas = offsetInicio + diasEnMes;
+  const sobrante = (7 - (totalCeldas % 7)) % 7;
+  for(let i=0; i<sobrante; i++){
+    celdasHTML += `<div class="cal-dia cal-vacio"></div>`;
+  }
+
+  grid.innerHTML = celdasHTML;
+}
+
 
 </script>
 

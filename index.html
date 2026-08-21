@@ -363,6 +363,36 @@
   }
   table.resumen-tabla-principal tbody tr:nth-child(even) td{background:#f4f4f4;}
 
+  .chips-meses{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .chip-mes{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 8px 4px 10px;
+    border-radius:14px;
+    font-size:.76rem;
+    font-weight:700;
+    color:#fff;
+  }
+  .chip-mes .quitar{
+    cursor:pointer;
+    background:rgba(255,255,255,.25);
+    border-radius:50%;
+    width:16px;
+    height:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:.68rem;
+    line-height:1;
+  }
+  .chip-mes .quitar:hover{background:rgba(255,255,255,.45);}
+
   .checkbox-sumar{
     display:flex;
     align-items:center;
@@ -847,10 +877,10 @@
   <nav class="tabs">
     <button class="tab-btn active" data-tab="registro">Registro de Ronda</button>
     <button class="tab-btn" data-tab="historial">Historial Rondas</button>
-    <button class="tab-btn" data-tab="estadistica">Estadística</button>
-    <button class="tab-btn" data-tab="parametros">Parámetros</button>
     <button class="tab-btn" data-tab="resumen">Resumen</button>
+    <button class="tab-btn" data-tab="parametros">Parámetros</button>
     <button class="tab-btn" data-tab="calendario">Calendario</button>
+    <button class="tab-btn" data-tab="estadistica">Estadística</button>
   </nav>
 </div>
 
@@ -998,8 +1028,12 @@
           </select>
         </div>
         <div id="e-mes-wrap">
-          <label>Mes</label>
-          <input type="month" id="e-mes">
+          <label>Mes(es) — puedes agregar varios</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="month" id="e-mes-nuevo">
+            <button type="button" class="btn secundario chico" id="e-mes-agregar">+ Agregar</button>
+          </div>
+          <div id="e-meses-chips" class="chips-meses"></div>
         </div>
         <div id="e-semana-wrap" style="display:none;">
           <label>Semana</label>
@@ -1088,8 +1122,8 @@
     <div class="card">
       <h2>Resumen de Rondas</h2>
       <div class="desc">
-        Escoge una Piazza y un mes para ver el listado completo de rondas registradas ese mes, ordenado por fecha.
-        Puedes además filtrar por Turno, Supervisor u Operador.
+        Escoge una Piazza, y un mes o un día específico (con el selector "Periodo"), para ver el listado
+        de rondas registradas. Puedes además filtrar por Turno, Supervisor u Operador.
       </div>
 
       <div class="filtros">
@@ -1110,8 +1144,19 @@
           </select>
         </div>
         <div>
+          <label>Periodo</label>
+          <select id="res-periodo">
+            <option value="mes">Por mes</option>
+            <option value="dia">Por día</option>
+          </select>
+        </div>
+        <div id="res-mes-wrap">
           <label>Mes</label>
           <input type="month" id="res-mes">
+        </div>
+        <div id="res-dia-wrap" style="display:none;">
+          <label>Día</label>
+          <input type="date" id="res-dia">
         </div>
         <div>
           <label>Turno</label>
@@ -1252,8 +1297,54 @@
       </div>
 
       <div class="acciones-exportar" style="margin-top:16px;">
-        <button class="btn secundario chico" id="cal-exportar-png">⭳ Exportar calendario (PNG)</button>
-        <button class="btn secundario chico" id="cal-exportar-pdf">⭳ Exportar calendario (PDF)</button>
+        <button class="btn secundario chico" id="cal-exportar-png">⭳ Exportar solo calendario (PNG)</button>
+        <button class="btn secundario chico" id="cal-exportar-pdf">⭳ Exportar solo calendario (PDF)</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Estadística Mensual por Piazza</h2>
+      <div class="desc">
+        Cumplimiento del mes escogido arriba, en barras, comparando lo rondado contra la meta. Si arriba
+        escoges "Todas las piazzas", muestra una barra por cada una de las 10. Si escoges una Piazza
+        específica, muestra una sola barra con el % del mes para esa piazza — y puedes activar
+        <b>"Ver por días"</b> para ver el % de cada día del mes en vez del promedio mensual.
+      </div>
+
+      <div class="resumen-cards">
+        <div class="mini-card"><div class="num" id="calest-cum-prom">—</div><div class="lbl">Cumplimiento promedio</div></div>
+        <div class="mini-card"><div class="num" id="calest-total-real">—</div><div class="lbl">Tiempo rondado total</div></div>
+        <div class="mini-card"><div class="num" id="calest-total-meta">—</div><div class="lbl">Meta total del mes</div></div>
+      </div>
+      <div class="caption" id="calest-caption-filtro"></div>
+
+      <label class="checkbox-sumar" id="calest-agrupar-fila" style="display:none;">
+        <input type="checkbox" id="calest-por-dias">
+        Ver por días (barra por cada día del mes, en vez del promedio mensual)
+      </label>
+
+      <div class="chart-titulo" id="calest-chart-titulo">SUPERVISIÓN</div>
+      <div class="chart-wrap"><div id="calest-chart-svg-wrap" style="width:100%;height:100%;"></div></div>
+
+      <div style="overflow-x:auto;">
+        <table class="resumen-tabla" id="calest-tabla-resumen">
+          <thead><tr id="calest-resumen-head"></tr></thead>
+          <tbody id="calest-resumen-body"></tbody>
+        </table>
+      </div>
+
+      <table class="detalle" id="calest-tabla">
+        <thead><tr><th id="calest-tabla-th1">Piazza</th><th>Real</th><th>Meta</th><th>% Cumplimiento</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="acciones-exportar" style="margin-top:12px;">
+        <button class="btn secundario chico" id="calest-exportar-png">⭳ Exportar solo estadística (PNG)</button>
+        <button class="btn secundario chico" id="calest-exportar-pdf">⭳ Exportar solo estadística (PDF)</button>
+      </div>
+
+      <div class="acciones-exportar" style="margin-top:6px;padding-top:10px;border-top:1px dashed var(--gris-200);">
+        <button class="btn primario chico" id="cal-exportar-todo-pdf">⭳ Exportar calendario + estadística juntos (PDF, una hoja)</button>
       </div>
     </div>
   </section>
@@ -2401,10 +2492,18 @@ function fechaCorta(fechaStr){
   return `${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
 }
 
-// mes actual por defecto
+// mes actual por defecto, y hoy como día por defecto
 document.getElementById("res-mes").value = new Date().toISOString().slice(0,7);
+document.getElementById("res-dia").value = new Date().toISOString().slice(0,10);
 
-["res-piazza","res-mes","res-turno","res-supervisor","res-operador","res-sumar"].forEach(id=>{
+document.getElementById("res-periodo").addEventListener("change", ()=>{
+  const periodo = document.getElementById("res-periodo").value;
+  document.getElementById("res-mes-wrap").style.display = periodo==="mes" ? "block" : "none";
+  document.getElementById("res-dia-wrap").style.display = periodo==="dia" ? "block" : "none";
+  renderResumen();
+});
+
+["res-piazza","res-mes","res-dia","res-turno","res-supervisor","res-operador","res-sumar"].forEach(id=>{
   document.getElementById(id).addEventListener("change", renderResumen);
 });
 
@@ -2425,28 +2524,43 @@ function poblarFiltrosResumen(){
 
 function filtrarRegistrosResumen(){
   const piazza = document.getElementById("res-piazza").value;
+  const periodo = document.getElementById("res-periodo").value;
   const mesVal = document.getElementById("res-mes").value;
+  const diaVal = document.getElementById("res-dia").value;
   const turnoFiltro = document.getElementById("res-turno").value;
   const supervisorFiltro = document.getElementById("res-supervisor").value;
   const operadorFiltro = document.getElementById("res-operador").value;
 
-  if(!mesVal) return null;
+  let filtroFecha;
+  if(periodo === "dia"){
+    if(!diaVal) return null;
+    filtroFecha = (r)=> r.fecha === diaVal;
+  }else{
+    if(!mesVal) return null;
+    filtroFecha = (r)=> r.fecha && r.fecha.startsWith(mesVal);
+  }
 
   const filtradas = RONDAS.filter(r=>{
     if(piazza && r.piazza !== piazza) return false;
-    if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
+    if(!filtroFecha(r)) return false;
     if(turnoFiltro && r.turno !== turnoFiltro) return false;
     if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
     if(operadorFiltro && (r.operador||"") !== operadorFiltro) return false;
     return true;
   });
 
-  filtradas.sort((a,b)=>{
-    const pa = PIAZZAS.indexOf(a.piazza), pb = PIAZZAS.indexOf(b.piazza);
-    if(pa !== pb) return pa - pb;
-    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return (a.ingreso||"").localeCompare(b.ingreso||"");
-  });
+  if(periodo === "dia"){
+    // Viendo un solo día: todas las filas comparten fecha, así que ordena únicamente por hora
+    // de ingreso (más temprano primero), sin importar la Piazza.
+    filtradas.sort((a,b)=> (a.ingreso||"").localeCompare(b.ingreso||""));
+  }else{
+    filtradas.sort((a,b)=>{
+      const pa = PIAZZAS.indexOf(a.piazza), pb = PIAZZAS.indexOf(b.piazza);
+      if(pa !== pb) return pa - pb;
+      if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+      return (a.ingreso||"").localeCompare(b.ingreso||"");
+    });
+  }
 
   return filtradas;
 }
@@ -2597,10 +2711,24 @@ function renderResumen(){
   });
 }
 
+// Devuelve la etiqueta y el valor (para el nombre de archivo) del periodo activo en Resumen (Mes o Día)
+function obtenerEtiquetaPeriodoResumen(){
+  const periodo = document.getElementById("res-periodo").value;
+  if(periodo === "dia"){
+    const diaVal = document.getElementById("res-dia").value;
+    if(!diaVal) return null;
+    return { valorArchivo: diaVal, etiquetaTitulo: fechaCorta(diaVal) };
+  }
+  const mesVal = document.getElementById("res-mes").value;
+  if(!mesVal) return null;
+  const [yearStr, monthStr] = mesVal.split("-");
+  return { valorArchivo: mesVal, etiquetaTitulo: `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}` };
+}
+
 document.getElementById("res-exportar-csv").addEventListener("click", ()=>{
   const piazza = document.getElementById("res-piazza").value;
-  const mesVal = document.getElementById("res-mes").value;
-  if(!mesVal){ alert("Escoge un mes primero."); return; }
+  const infoPeriodo = obtenerEtiquetaPeriodoResumen();
+  if(!infoPeriodo){ alert("Escoge un mes o un día primero."); return; }
 
   const filtradas = filtrarRegistrosResumen() || [];
 
@@ -2612,7 +2740,7 @@ document.getElementById("res-exportar-csv").addEventListener("click", ()=>{
   const a = document.createElement("a");
   a.href = url;
   const etiquetaArchivo = piazza ? piazza.replace(/\s+/g,"") : "TODAS_PIAZZAS";
-  a.download = `resumen_${etiquetaArchivo}_${mesVal}.csv`;
+  a.download = `resumen_${etiquetaArchivo}_${infoPeriodo.valorArchivo}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -2624,18 +2752,16 @@ document.getElementById("res-exportar-pdf").addEventListener("click", ()=>{
   if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
 
   const piazza = document.getElementById("res-piazza").value;
-  const mesVal = document.getElementById("res-mes").value;
-  if(!mesVal){ alert("Escoge un mes primero."); return; }
+  const infoPeriodo = obtenerEtiquetaPeriodoResumen();
+  if(!infoPeriodo){ alert("Escoge un mes o un día primero."); return; }
 
   const filtradas = filtrarRegistrosResumen() || [];
 
-  const [yearStr, monthStr] = mesVal.split("-");
-  const etiquetaMes = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
   const etiquetaPiazza = piazza || "Todas las Piazzas";
 
   const docPDF = new JsPDF();
   docPDF.setFontSize(14);
-  docPDF.text(`Resumen de Rondas — ${etiquetaPiazza} — ${etiquetaMes}`, 14, 16);
+  docPDF.text(`Resumen de Rondas — ${etiquetaPiazza} — ${infoPeriodo.etiquetaTitulo}`, 14, 16);
   docPDF.setFontSize(9);
   docPDF.setTextColor(90,100,110);
   docPDF.text(`Total de rondas: ${filtradas.length}`, 14, 22);
@@ -2649,7 +2775,7 @@ document.getElementById("res-exportar-pdf").addEventListener("click", ()=>{
   });
 
   const etiquetaArchivo = piazza ? piazza.replace(/\s+/g,"") : "TODAS_PIAZZAS";
-  docPDF.save(`resumen_${etiquetaArchivo}_${mesVal}.pdf`);
+  docPDF.save(`resumen_${etiquetaArchivo}_${infoPeriodo.valorArchivo}.pdf`);
 });
 
 /* ---- Exportar MES COMPLETO (todas las Piazzas juntas), sin depender del filtro de Piazza ---- */
@@ -2787,9 +2913,46 @@ document.getElementById("res-exportar-mes-pdf").addEventListener("click", ()=>{
    PESTAÑA 3: ESTADÍSTICA
 =================================================================== */
 
-// mes actual por defecto (formato YYYY-MM)
-document.getElementById("e-mes").value = new Date().toISOString().slice(0,7);
+// Meses seleccionados para comparar en Estadística (cada uno con su color de línea).
+// Por defecto arranca con el mes actual, igual que antes.
+let ESTADISTICA_MESES = [new Date().toISOString().slice(0,7)];
+const PALETA_MESES = ["#e0483e","#2fa84f","#8e5bd6","#e6a52a","#1fa6a6","#e6739a","#3a7bd5","#c77c2c"];
+function colorParaIndiceMes(i){ return PALETA_MESES[i % PALETA_MESES.length]; }
+
+function renderizarChipsMeses(){
+  const cont = document.getElementById("e-meses-chips");
+  cont.innerHTML = ESTADISTICA_MESES.map((mesVal,i)=>{
+    const [yearStr, monthStr] = mesVal.split("-");
+    const etiqueta = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+    return `<span class="chip-mes" style="background:${colorParaIndiceMes(i)};" data-mes="${mesVal}">
+      ${etiqueta}
+      <span class="quitar" title="Quitar este mes" data-mes-quitar="${mesVal}">✕</span>
+    </span>`;
+  }).join("");
+
+  cont.querySelectorAll("[data-mes-quitar]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      if(ESTADISTICA_MESES.length <= 1) return; // siempre debe quedar al menos un mes
+      ESTADISTICA_MESES = ESTADISTICA_MESES.filter(m=>m !== el.dataset.mesQuitar);
+      renderizarChipsMeses();
+      renderEstadistica();
+    });
+  });
+}
+
 document.getElementById("e-semana").value = fechaAIsoWeek(new Date());
+renderizarChipsMeses();
+
+document.getElementById("e-mes-agregar").addEventListener("click", ()=>{
+  const nuevo = document.getElementById("e-mes-nuevo").value;
+  if(!nuevo) return;
+  if(!ESTADISTICA_MESES.includes(nuevo)){
+    ESTADISTICA_MESES.push(nuevo);
+    ESTADISTICA_MESES.sort();
+    renderizarChipsMeses();
+    renderEstadistica();
+  }
+});
 
 document.getElementById("e-periodo").addEventListener("change", ()=>{
   const periodo = document.getElementById("e-periodo").value;
@@ -2798,7 +2961,7 @@ document.getElementById("e-periodo").addEventListener("change", ()=>{
   renderEstadistica();
 });
 
-["e-mes","e-semana","e-piazza","e-supervisor","e-modo"].forEach(id=>{
+["e-semana","e-piazza","e-supervisor","e-modo"].forEach(id=>{
   document.getElementById(id).addEventListener("change", renderEstadistica);
 });
 
@@ -2850,15 +3013,91 @@ function metaPiazza(piazza, modo, periodo){
   return totDiurno[campo] + totNocturno[campo];
 }
 
+// Calcula filas (real/meta/pct por Piazza) para UN mes en concreto. Reutilizado tanto en modo
+// de un solo mes como al comparar varios meses a la vez.
+function calcularFilasParaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
+  return piazzasAMostrar.map(piazza=>{
+    const real = RONDAS.filter(r=>{
+      if(r.piazza !== piazza) return false;
+      if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
+      if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+      if(modo !== "total" && r.turno !== modo) return false;
+      return true;
+    }).reduce((s,r)=>s+(r.minutos||0),0);
+
+    const meta = metaPiazza(piazza, modo, "mes");
+    const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
+    return {piazza, real, meta, pct};
+  });
+}
+
 function renderEstadistica(){
   const periodo = document.getElementById("e-periodo").value;
   const piazzaFiltro = document.getElementById("e-piazza").value;
   const supervisorFiltro = document.getElementById("e-supervisor").value;
   const modo = document.getElementById("e-modo").value;
+  const piazzasAMostrar = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
 
+  const caption = document.getElementById("e-caption-filtro");
+  const baseTxt = supervisorFiltro
+    ? `Mostrando el aporte de ${supervisorFiltro} comparado contra la meta total de cada Piazza`
+    : `Mostrando el total rondado por todos los supervisores en cada Piazza`;
+
+  // ---- Varios meses a la vez: una línea de color distinto por cada mes ----
+  if(periodo==="mes" && ESTADISTICA_MESES.length > 1){
+    caption.textContent = baseTxt + " (meta mensual: total semanal × 30). Comparando " + ESTADISTICA_MESES.length + " meses.";
+
+    const series = ESTADISTICA_MESES.map((mesVal,i)=>{
+      const filas = calcularFilasParaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo);
+      const [yearStr, monthStr] = mesVal.split("-");
+      const etiqueta = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+      return { mesVal, etiqueta, color: colorParaIndiceMes(i), filas };
+    });
+
+    // resumen (promedios combinados de todos los meses y piazzas juntos)
+    const todasLasFilas = series.flatMap(s=>s.filas);
+    const totalReal = todasLasFilas.reduce((s,f)=>s+f.real,0);
+    const totalMeta = todasLasFilas.reduce((s,f)=>s+f.meta,0);
+    const promedioPct = todasLasFilas.length ? Math.round(todasLasFilas.reduce((s,f)=>s+f.pct,0)/todasLasFilas.length) : 0;
+
+    document.getElementById("e-cum-prom").textContent = promedioPct + "%";
+    document.getElementById("e-total-real").textContent = minAHoras(totalReal);
+    document.getElementById("e-total-meta").textContent = minAHoras(totalMeta);
+
+    document.getElementById("e-chart-titulo").textContent = `SUPERVISIÓN — COMPARATIVA DE MESES`;
+
+    // tabla de detalle: una fila por cada combinación Mes + Piazza
+    const tbody = document.querySelector("#e-tabla tbody");
+    tbody.innerHTML = series.flatMap(s=>
+      s.filas.map(f=>{
+        let pillClass = "bad";
+        if(f.pct>=100) pillClass="ok"; else if(f.pct>=70) pillClass="warn";
+        return `<tr>
+          <td>${s.etiqueta} — ${f.piazza}</td>
+          <td>${minAHoras(f.real)}</td>
+          <td>${minAHoras(f.meta)}</td>
+          <td><span class="pill ${pillClass}">${f.pct}%</span></td>
+        </tr>`;
+      })
+    ).join("");
+
+    // tabla resumen tipo hoja de calculo (siglas como columnas, una fila por mes)
+    const labels = piazzasAMostrar.map(p => SIGLAS[p] || p);
+    const head = document.getElementById("e-resumen-head");
+    const body = document.getElementById("e-resumen-body");
+    head.innerHTML = `<th></th>` + labels.map(l=>`<th>${l}</th>`).join("");
+    body.innerHTML = `<tr><td>META</td>${labels.map(()=>`<td>100%</td>`).join("")}</tr>` +
+      series.map(s=>`<tr><td style="color:${s.color};font-weight:800;">${s.etiqueta}</td>${s.filas.map(f=>`<td>${f.pct}%</td>`).join("")}</tr>`).join("");
+
+    const wrap = document.getElementById("e-chart-svg-wrap");
+    wrap.innerHTML = construirSVGGraficoMultiMes(labels, series);
+    return;
+  }
+
+  // ---- Un solo mes, o semana (comportamiento de siempre) ----
   let filtroFecha;
   if(periodo==="mes"){
-    const mesVal = document.getElementById("e-mes").value;
+    const mesVal = ESTADISTICA_MESES[0];
     if(!mesVal) return;
     filtroFecha = (r)=> r.fecha && r.fecha.startsWith(mesVal);
   }else{
@@ -2868,12 +3107,6 @@ function renderEstadistica(){
     filtroFecha = (r)=> r.fecha && fechaEnRango(r.fecha, inicio, fin);
   }
 
-  const piazzasAMostrar = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
-
-  const caption = document.getElementById("e-caption-filtro");
-  const baseTxt = supervisorFiltro
-    ? `Mostrando el aporte de ${supervisorFiltro} comparado contra la meta total de cada Piazza`
-    : `Mostrando el total rondado por todos los supervisores en cada Piazza`;
   caption.textContent = baseTxt + (periodo==="semana" ? " (meta semanal: lunes a domingo)." : " (meta mensual: total semanal × 30).");
 
   const filas = piazzasAMostrar.map(piazza=>{
@@ -2932,6 +3165,50 @@ function renderEstadistica(){
   wrap.innerHTML = construirSVGGrafico(labels, dataPeriodo, etiquetaPeriodo);
 }
 
+function construirSVGGraficoMultiMes(labels, series){
+  const W = 900, H = 340;
+  const padLeft = 55, padRight = 30, padTop = 46, padBottom = 46;
+  const chartW = W - padLeft - padRight;
+  const chartH = H - padTop - padBottom;
+  const n = Math.max(labels.length, 1);
+  const maxVal = Math.max(100, ...series.flatMap(s=>s.filas.map(f=>f.pct)), 10);
+  const stepX = n>1 ? chartW/(n-1) : 0;
+  const escalaY = (v)=> padTop + chartH - (Math.min(v,maxVal)/maxVal)*chartH;
+  const escalaX = (i)=> n>1 ? padLeft + i*stepX : padLeft + chartW/2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',system-ui,sans-serif;">`;
+  svg += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+
+  const yMeta = escalaY(100);
+  svg += `<line x1="${padLeft}" y1="${yMeta}" x2="${W-padRight}" y2="${yMeta}" stroke="#2f6fed" stroke-width="2" stroke-dasharray="5 4"/>`;
+  svg += `<text x="${padLeft-6}" y="${yMeta+4}" font-size="11" font-weight="700" fill="#2f6fed" text-anchor="end">100%</text>`;
+
+  series.forEach(s=>{
+    const puntos = s.filas.map((f,i)=> `${escalaX(i).toFixed(1)},${escalaY(f.pct).toFixed(1)}`).join(" ");
+    svg += `<polyline points="${puntos}" fill="none" stroke="${s.color}" stroke-width="2.5"/>`;
+    s.filas.forEach((f,i)=>{
+      svg += `<circle cx="${escalaX(i).toFixed(1)}" cy="${escalaY(f.pct).toFixed(1)}" r="4" fill="${s.color}"/>`;
+    });
+  });
+
+  labels.forEach((lbl,i)=>{
+    svg += `<text x="${escalaX(i).toFixed(1)}" y="${(padTop+chartH+18).toFixed(1)}" font-size="10.5" fill="#5b6b7c" text-anchor="middle">${lbl}</text>`;
+  });
+
+  // Leyenda: un chip por mes, con su color, arriba del gráfico.
+  let lx = padLeft;
+  const ly = 20;
+  series.forEach(s=>{
+    svg += `<rect x="${lx.toFixed(1)}" y="${(ly-9).toFixed(1)}" width="14" height="4" rx="2" fill="${s.color}"/>`;
+    svg += `<text x="${(lx+18).toFixed(1)}" y="${(ly-4).toFixed(1)}" font-size="10.5" fill="#334455">${s.etiqueta}</text>`;
+    lx += 18 + s.etiqueta.length*6.3 + 18;
+  });
+
+  svg += `</svg>`;
+  return svg;
+}
+
+
 function construirSVGGrafico(labels, dataPeriodo, etiquetaPeriodo){
   const W = 900, H = 340;
   const padL = 55, padR = 30, padT = 40, padB = 45;
@@ -2989,7 +3266,7 @@ function obtenerEtiquetaPeriodo(periodo){
     const [yearStr, wStr] = semanaVal.split("-W");
     return `SEMANA ${Number(wStr)} · ${yearStr}`;
   }
-  const mesVal = document.getElementById("e-mes").value;
+  const mesVal = ESTADISTICA_MESES[0];
   if(!mesVal) return "MES";
   const [yearStr, monthStr] = mesVal.split("-");
   return `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
@@ -2998,8 +3275,8 @@ function obtenerEtiquetaPeriodo(periodo){
 /* ---- Exportar Estadística: PNG del gráfico (rasterizando el SVG) y CSV de la tabla de detalle ---- */
 
 // Helper compartido: convierte el SVG del gráfico actual en un dataURL PNG (usado por PNG y PDF).
-function rasterizarGraficoSVG(callback){
-  const svgEl = document.querySelector("#e-chart-svg-wrap svg");
+function rasterizarSVGDesdeSelector(selector, callback){
+  const svgEl = document.querySelector(selector);
   if(!svgEl){ callback(null); return; }
   const svgData = new XMLSerializer().serializeToString(svgEl);
   const svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
@@ -3021,6 +3298,10 @@ function rasterizarGraficoSVG(callback){
     callback(null);
   };
   img.src = url;
+}
+
+function rasterizarGraficoSVG(callback){
+  rasterizarSVGDesdeSelector("#e-chart-svg-wrap svg", callback);
 }
 
 document.getElementById("e-exportar-png").addEventListener("click", ()=>{
@@ -3375,6 +3656,199 @@ function renderCalendario(){
   grid.querySelectorAll(".cal-dia:not(.cal-vacio)").forEach(celda=>{
     celda.addEventListener("click", ()=> mostrarDetalleDia(celda.dataset.fecha));
   });
+
+  renderEstadisticaCalendario();
+}
+
+// Calcula el cumplimiento del mes, para una lista de piazzas dada (una sola, o todas).
+// Igual que en Estadística pero fijo al mes que se está viendo en el Calendario.
+function calcularFilasEstadisticaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
+  const filas = piazzasAMostrar.map(piazza=>{
+    const real = RONDAS.filter(r=>{
+      if(r.piazza !== piazza) return false;
+      if(!r.fecha || !r.fecha.startsWith(mesVal)) return false;
+      if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+      if(modo !== "total" && r.turno !== modo) return false;
+      return true;
+    }).reduce((s,r)=>s+(r.minutos||0),0);
+
+    const meta = metaPiazza(piazza, modo, "mes");
+    const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
+    return {piazza, real, meta, pct};
+  });
+
+  const totalReal = filas.reduce((s,f)=>s+f.real,0);
+  const totalMeta = filas.reduce((s,f)=>s+f.meta,0);
+  const promedioPct = filas.length ? Math.round(filas.reduce((s,f)=>s+f.pct,0)/filas.length) : 0;
+
+  return { filas, totalReal, totalMeta, promedioPct };
+}
+
+// Calcula el % de cumplimiento DÍA POR DÍA (para una sola Piazza), a lo largo del mes.
+// Salta los días futuros (aún no han pasado), igual que hace el Calendario.
+function calcularSerieDiariaPiazza(piazza, mesVal, supervisorFiltro, modo){
+  const [yearStr, monthStr] = mesVal.split("-");
+  const year = Number(yearStr), monthIndex = Number(monthStr)-1;
+  const diasEnMes = new Date(year, monthIndex+1, 0).getDate();
+  const hoyStr = new Date().toISOString().slice(0,10);
+
+  const labels = [];
+  const valores = [];
+  const filasDetalle = [];
+
+  for(let d=1; d<=diasEnMes; d++){
+    const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    if(fechaStr > hoyStr) continue; // dia futuro, aun no ha pasado
+
+    const diaSemana = claveDiaSemana(new Date(year, monthIndex, d));
+    let meta, real;
+    if(modo === "total"){
+      meta = metaDelDia([piazza], diaSemana, "Diurno") + metaDelDia([piazza], diaSemana, "Nocturno");
+      real = realDelDia([piazza], fechaStr, "", supervisorFiltro);
+    }else{
+      meta = metaDelDia([piazza], diaSemana, modo);
+      real = realDelDia([piazza], fechaStr, modo, supervisorFiltro);
+    }
+    const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
+
+    labels.push(String(d));
+    valores.push(pct);
+    filasDetalle.push({dia:d, real, meta, pct});
+  }
+
+  return { labels, valores, filasDetalle };
+}
+
+// Gráfico de barras genérico (usado para el % mensual de una sola piazza, o el % día por día).
+function construirSVGBarras(labels, valores, tituloDatos){
+  const n = Math.max(labels.length, 1);
+  const W = Math.max(700, n*30+80);
+  const H = 340;
+  const padLeft = 46, padRight = 20, padTop = 30, padBottom = 40;
+  const chartW = W - padLeft - padRight;
+  const chartH = H - padTop - padBottom;
+  const maxVal = Math.max(100, ...valores, 10);
+  const escalaY = (v)=> padTop + chartH - (Math.min(v, maxVal)/maxVal)*chartH;
+  const gap = chartW / n;
+  const barW = Math.min(26, gap*0.62);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',system-ui,sans-serif;">`;
+  svg += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+
+  const yMeta = escalaY(100);
+  svg += `<line x1="${padLeft}" y1="${yMeta}" x2="${W-padRight}" y2="${yMeta}" stroke="#2f6fed" stroke-width="2" stroke-dasharray="5 4"/>`;
+  svg += `<text x="${padLeft-6}" y="${yMeta+4}" font-size="11" font-weight="700" fill="#2f6fed" text-anchor="end">100%</text>`;
+
+  labels.forEach((lbl,i)=>{
+    const val = valores[i] || 0;
+    const x = padLeft + i*gap + (gap-barW)/2;
+    const yTop = escalaY(val);
+    const h = (padTop+chartH) - yTop;
+    const color = colorEscalaPorcentaje(Math.max(0, Math.min(100, val)));
+    svg += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(h,0).toFixed(1)}" rx="3" fill="${color}"/>`;
+    svg += `<text x="${(x+barW/2).toFixed(1)}" y="${(yTop-4).toFixed(1)}" font-size="10" font-weight="800" fill="#0f2a44" text-anchor="middle">${val}%</text>`;
+    svg += `<text x="${(x+barW/2).toFixed(1)}" y="${(padTop+chartH+14).toFixed(1)}" font-size="10" fill="#5b6b7c" text-anchor="middle">${lbl}</text>`;
+  });
+
+  svg += `</svg>`;
+  return svg;
+}
+
+let CAL_ESTADISTICA_ACTUAL = null; // guarda los datos de la estadística mensual actual, para exportar
+
+["calest-por-dias"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", renderEstadisticaCalendario);
+});
+
+function renderEstadisticaCalendario(){
+  if(!CAL_CONTEXTO || !CAL_CONTEXTO.mesVal) return;
+
+  const { mesVal, turnoFiltro, supervisorFiltro, piazzaFiltro } = CAL_CONTEXTO;
+  const modo = turnoFiltro || "total";
+  const piazzasAMostrar = piazzaFiltro ? [piazzaFiltro] : PIAZZAS;
+
+  const filaAgrupar = document.getElementById("calest-agrupar-fila");
+  const checkboxDias = document.getElementById("calest-por-dias");
+  if(piazzaFiltro){
+    filaAgrupar.style.display = "";
+  }else{
+    filaAgrupar.style.display = "none";
+    checkboxDias.checked = false;
+  }
+  const verPorDias = !!(piazzaFiltro && checkboxDias.checked);
+
+  const { filas, totalReal, totalMeta, promedioPct } = calcularFilasEstadisticaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo);
+
+  const [yearStr, monthStr] = mesVal.split("-");
+  const etiquetaPeriodo = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
+
+  const caption = document.getElementById("calest-caption-filtro");
+  const baseTxt = supervisorFiltro
+    ? `Mostrando el aporte de ${supervisorFiltro} comparado contra la meta total`
+    : `Mostrando el total rondado por todos los supervisores`;
+  caption.textContent = baseTxt + " (meta mensual: total semanal × 30).";
+
+  document.getElementById("calest-cum-prom").textContent = promedioPct + "%";
+  document.getElementById("calest-total-real").textContent = minAHoras(totalReal);
+  document.getElementById("calest-total-meta").textContent = minAHoras(totalMeta);
+
+  const tituloTh1 = document.getElementById("calest-tabla-th1");
+  const tbody = document.querySelector("#calest-tabla tbody");
+  const head = document.getElementById("calest-resumen-head");
+  const body = document.getElementById("calest-resumen-body");
+  const wrap = document.getElementById("calest-chart-svg-wrap");
+
+  if(verPorDias){
+    // Vista "por días": una barra por cada día del mes, para la Piazza escogida.
+    const { labels, valores, filasDetalle } = calcularSerieDiariaPiazza(piazzaFiltro, mesVal, supervisorFiltro, modo);
+
+    document.getElementById("calest-chart-titulo").textContent = `SUPERVISIÓN ${etiquetaPeriodo} · ${piazzaFiltro} · Por día`;
+    wrap.innerHTML = construirSVGBarras(labels, valores, etiquetaPeriodo);
+
+    tituloTh1.textContent = "Día";
+    tbody.innerHTML = filasDetalle.map(f=>{
+      let pillClass = "bad";
+      if(f.pct>=100) pillClass="ok"; else if(f.pct>=70) pillClass="warn";
+      return `<tr>
+        <td>Día ${f.dia}</td>
+        <td>${minAHoras(f.real)}</td>
+        <td>${minAHoras(f.meta)}</td>
+        <td><span class="pill ${pillClass}">${f.pct}%</span></td>
+      </tr>`;
+    }).join("");
+
+    head.innerHTML = `<th></th>` + labels.map(l=>`<th>${l}</th>`).join("");
+    body.innerHTML = `<tr><td>${SIGLAS[piazzaFiltro]||piazzaFiltro}</td>${valores.map(v=>`<td>${v}%</td>`).join("")}</tr>`;
+
+    CAL_ESTADISTICA_ACTUAL = { filas: filasDetalle, totalReal, totalMeta, promedioPct, etiquetaPeriodo, mesVal };
+  }else{
+    // Vista normal: "Todas las piazzas" (línea comparando las 10) o una Piazza específica (barra única).
+    document.getElementById("calest-chart-titulo").textContent = `SUPERVISIÓN ${etiquetaPeriodo}`;
+
+    tituloTh1.textContent = "Piazza";
+    tbody.innerHTML = filas.map(f=>{
+      let pillClass = "bad";
+      if(f.pct>=100) pillClass="ok"; else if(f.pct>=70) pillClass="warn";
+      return `<tr>
+        <td>${f.piazza}</td>
+        <td>${minAHoras(f.real)}</td>
+        <td>${minAHoras(f.meta)}</td>
+        <td><span class="pill ${pillClass}">${f.pct}%</span></td>
+      </tr>`;
+    }).join("");
+
+    head.innerHTML = `<th></th>` + filas.map(f=>`<th>${SIGLAS[f.piazza]||f.piazza}</th>`).join("");
+    body.innerHTML = `
+      <tr><td>PROMEDIO</td>${filas.map(()=>`<td>100%</td>`).join("")}</tr>
+      <tr><td>${etiquetaPeriodo}</td>${filas.map(f=>`<td>${f.pct}%</td>`).join("")}</tr>
+    `;
+
+    const labels = filas.map(f=> SIGLAS[f.piazza] || f.piazza);
+    const dataPeriodo = filas.map(f=>f.pct);
+    wrap.innerHTML = construirSVGBarras(labels, dataPeriodo, etiquetaPeriodo);
+
+    CAL_ESTADISTICA_ACTUAL = { filas, totalReal, totalMeta, promedioPct, etiquetaPeriodo, mesVal };
+  }
 }
 
 const ETIQUETA_COLOR = {
@@ -3609,6 +4083,43 @@ document.getElementById("cal-exportar-png").addEventListener("click", ()=>{
   });
 });
 
+// Construye el encabezado y las filas de la tabla de detalle del calendario (para exportar),
+// según la Vista activa (gradiente o colores). Reutilizable por la exportación de solo-calendario
+// y por la exportación combinada (calendario + estadística).
+function construirFilasTablaCalendario(){
+  const { year, monthIndex, diasEnMes, vista } = CAL_CONTEXTO;
+  const filasTabla = [];
+  let encabezadoTabla;
+
+  if(vista === "gradiente"){
+    encabezadoTabla = ["Fecha","Piazza","Real","Meta","%"];
+    for(let d=1; d<=diasEnMes; d++){
+      const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const datos = CAL_DATOS_DIA[fechaStr];
+      if(!datos || datos.futuro) continue;
+      filasTabla.push([fechaCorta(fechaStr), "— Promedio del día —", "", "", `${datos.porcentaje}%`]);
+      datos.desglose.forEach(dp=>{
+        filasTabla.push(["", SIGLAS[dp.piazza]||dp.piazza, minAHoras(dp.real), minAHoras(dp.meta), `${dp.pct}%`]);
+      });
+    }
+  }else{
+    encabezadoTabla = ["Fecha","Turno","Real","Meta","Estado"];
+    for(let d=1; d<=diasEnMes; d++){
+      const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const datos = CAL_DATOS_DIA[fechaStr];
+      if(!datos || datos.futuro) continue;
+      if(datos.soloUnTurno){
+        filasTabla.push([fechaCorta(fechaStr), datos.turno, minAHoras(datos.real), minAHoras(datos.meta), ETIQUETA_COLOR[datos.color]]);
+      }else{
+        filasTabla.push([fechaCorta(fechaStr), "Diurno", minAHoras(datos.realDiurno), minAHoras(datos.metaDiurno), ETIQUETA_COLOR[datos.colorIzq]]);
+        filasTabla.push(["", "Nocturno", minAHoras(datos.realNocturno), minAHoras(datos.metaNocturno), ETIQUETA_COLOR[datos.colorDer]]);
+      }
+    }
+  }
+
+  return { encabezadoTabla, filasTabla };
+}
+
 document.getElementById("cal-exportar-pdf").addEventListener("click", ()=>{
   const JsPDF = obtenerJsPDF();
   if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
@@ -3630,37 +4141,7 @@ document.getElementById("cal-exportar-pdf").addEventListener("click", ()=>{
       y += imgH + 8;
     }
 
-    const { year, monthIndex, diasEnMes, vista } = CAL_CONTEXTO;
-    const filasTabla = [];
-    let encabezadoTabla;
-
-    if(vista === "gradiente"){
-      // Vista "Gradiente": una fila de promedio del día + desglose por Piazza debajo
-      encabezadoTabla = ["Fecha","Piazza","Real","Meta","%"];
-      for(let d=1; d<=diasEnMes; d++){
-        const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-        const datos = CAL_DATOS_DIA[fechaStr];
-        if(!datos || datos.futuro) continue;
-        filasTabla.push([fechaCorta(fechaStr), "— Promedio del día —", "", "", `${datos.porcentaje}%`]);
-        datos.desglose.forEach(dp=>{
-          filasTabla.push(["", SIGLAS[dp.piazza]||dp.piazza, minAHoras(dp.real), minAHoras(dp.meta), `${dp.pct}%`]);
-        });
-      }
-    }else{
-      // Vista "Colores": color de aprobado/no-aprobado por turno
-      encabezadoTabla = ["Fecha","Turno","Real","Meta","Estado"];
-      for(let d=1; d<=diasEnMes; d++){
-        const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-        const datos = CAL_DATOS_DIA[fechaStr];
-        if(!datos || datos.futuro) continue;
-        if(datos.soloUnTurno){
-          filasTabla.push([fechaCorta(fechaStr), datos.turno, minAHoras(datos.real), minAHoras(datos.meta), ETIQUETA_COLOR[datos.color]]);
-        }else{
-          filasTabla.push([fechaCorta(fechaStr), "Diurno", minAHoras(datos.realDiurno), minAHoras(datos.metaDiurno), ETIQUETA_COLOR[datos.colorIzq]]);
-          filasTabla.push(["", "Nocturno", minAHoras(datos.realNocturno), minAHoras(datos.metaNocturno), ETIQUETA_COLOR[datos.colorDer]]);
-        }
-      }
-    }
+    const { encabezadoTabla, filasTabla } = construirFilasTablaCalendario();
 
     docPDF.autoTable({
       startY: y,
@@ -3671,6 +4152,154 @@ document.getElementById("cal-exportar-pdf").addEventListener("click", ()=>{
     });
 
     docPDF.save(`calendario_${CAL_CONTEXTO.mesVal}.pdf`);
+  });
+});
+
+/* ---- Exportar SOLO la estadística mensual (PNG / PDF) ---- */
+document.getElementById("calest-exportar-png").addEventListener("click", ()=>{
+  rasterizarSVGDesdeSelector("#calest-chart-svg-wrap svg", (pngUrl)=>{
+    if(!pngUrl){ alert("No se pudo exportar el gráfico como imagen."); return; }
+    const a = document.createElement("a");
+    a.href = pngUrl;
+    a.download = `estadistica_${document.getElementById("calest-chart-titulo").textContent.replace(/\s+/g,"_").toLowerCase()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+});
+
+document.getElementById("calest-exportar-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+  if(!CAL_ESTADISTICA_ACTUAL){ alert("Escoge un mes primero."); return; }
+
+  const titulo = document.getElementById("calest-chart-titulo").textContent;
+
+  rasterizarSVGDesdeSelector("#calest-chart-svg-wrap svg", (pngUrl)=>{
+    const docPDF = new JsPDF();
+    docPDF.setFontSize(15);
+    docPDF.setTextColor(15,42,68);
+    docPDF.text(titulo, 14, 16);
+    docPDF.setFontSize(9);
+    docPDF.setTextColor(90,100,110);
+    docPDF.text(document.getElementById("calest-caption-filtro").textContent, 14, 22, {maxWidth:180});
+
+    let y = 30;
+    if(pngUrl){
+      const imgW = 182, imgH = imgW*(340/900);
+      docPDF.addImage(pngUrl, "PNG", 14, y, imgW, imgH);
+      y += imgH + 8;
+    }
+
+    const encResumen = Array.from(document.querySelectorAll("#calest-resumen-head th")).map(th=>th.textContent || "");
+    const filasResumen = Array.from(document.querySelectorAll("#calest-resumen-body tr")).map(tr=>
+      Array.from(tr.querySelectorAll("td")).map(td=>td.textContent)
+    );
+    docPDF.autoTable({
+      startY: y,
+      head: [encResumen],
+      body: filasResumen,
+      styles:{ fontSize:8, halign:"center" },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+
+    y = docPDF.lastAutoTable.finalY + 8;
+
+    const filasDetalle = Array.from(document.querySelectorAll("#calest-tabla tbody tr")).map(tr=>{
+      const celdas = tr.querySelectorAll("td");
+      return [celdas[0].textContent, celdas[1].textContent, celdas[2].textContent, celdas[3].textContent.trim()];
+    });
+    docPDF.autoTable({
+      startY: y,
+      head: [["Piazza","Real","Meta","% Cumplimiento"]],
+      body: filasDetalle,
+      styles:{ fontSize:8 },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+
+    docPDF.save(`estadistica_${titulo.replace(/\s+/g,"_").toLowerCase()}.pdf`);
+  });
+});
+
+/* ---- Exportar TODO junto: calendario + estadística mensual, en una sola hoja PDF ---- */
+document.getElementById("cal-exportar-todo-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+  if(!CAL_CONTEXTO){ alert("Escoge un mes primero."); return; }
+
+  const resultadoCal = construirSVGCalendario();
+  if(!resultadoCal){ alert("No hay calendario para exportar."); return; }
+
+  rasterizarSVGString(resultadoCal.svg, resultadoCal.width, resultadoCal.height, (pngCalendario)=>{
+    rasterizarSVGDesdeSelector("#calest-chart-svg-wrap svg", (pngEstadistica)=>{
+      const docPDF = new JsPDF();
+
+      // ---- Página 1: Calendario ----
+      docPDF.setFontSize(13);
+      docPDF.setTextColor(15,42,68);
+      docPDF.text(CAL_CONTEXTO.tituloTexto, 14, 14);
+
+      let y = 20;
+      if(pngCalendario){
+        const imgW = 182, imgH = imgW * (resultadoCal.height / resultadoCal.width);
+        docPDF.addImage(pngCalendario, "PNG", 14, y, imgW, imgH);
+        y += imgH + 8;
+      }
+
+      const { encabezadoTabla, filasTabla } = construirFilasTablaCalendario();
+      docPDF.autoTable({
+        startY: y,
+        head: [encabezadoTabla],
+        body: filasTabla,
+        styles:{ fontSize:8 },
+        headStyles:{ fillColor:[15,42,68] }
+      });
+
+      // ---- Página 2: Estadística mensual por Piazza ----
+      docPDF.addPage();
+      const tituloEst = document.getElementById("calest-chart-titulo").textContent;
+      docPDF.setFontSize(15);
+      docPDF.setTextColor(15,42,68);
+      docPDF.text(tituloEst, 14, 16);
+      docPDF.setFontSize(9);
+      docPDF.setTextColor(90,100,110);
+      docPDF.text(document.getElementById("calest-caption-filtro").textContent, 14, 22, {maxWidth:180});
+
+      let y2 = 30;
+      if(pngEstadistica){
+        const imgW = 182, imgH = imgW*(340/900);
+        docPDF.addImage(pngEstadistica, "PNG", 14, y2, imgW, imgH);
+        y2 += imgH + 8;
+      }
+
+      const encResumen = Array.from(document.querySelectorAll("#calest-resumen-head th")).map(th=>th.textContent || "");
+      const filasResumen = Array.from(document.querySelectorAll("#calest-resumen-body tr")).map(tr=>
+        Array.from(tr.querySelectorAll("td")).map(td=>td.textContent)
+      );
+      docPDF.autoTable({
+        startY: y2,
+        head: [encResumen],
+        body: filasResumen,
+        styles:{ fontSize:8, halign:"center" },
+        headStyles:{ fillColor:[15,42,68] }
+      });
+
+      y2 = docPDF.lastAutoTable.finalY + 8;
+
+      const filasDetalle = Array.from(document.querySelectorAll("#calest-tabla tbody tr")).map(tr=>{
+        const celdas = tr.querySelectorAll("td");
+        return [celdas[0].textContent, celdas[1].textContent, celdas[2].textContent, celdas[3].textContent.trim()];
+      });
+      docPDF.autoTable({
+        startY: y2,
+        head: [["Piazza","Real","Meta","% Cumplimiento"]],
+        body: filasDetalle,
+        styles:{ fontSize:8 },
+        headStyles:{ fillColor:[15,42,68] }
+      });
+
+      docPDF.save(`calendario_y_estadistica_${CAL_CONTEXTO.mesVal}.pdf`);
+    });
   });
 });
 

@@ -106,7 +106,7 @@
     padding:16px;
     transition:max-width .15s ease;
   }
-  main.main-ancho{max-width:1400px;}
+  main.main-ancho{max-width:1080px;}
   .panel{display:none;}
   .panel.active{display:block;animation:fadein .15s ease;}
   @keyframes fadein{from{opacity:0}to{opacity:1}}
@@ -399,42 +399,53 @@
 
   .cal-titulo-mes{
     text-align:center;
-    font-size:1.3rem;
+    font-size:1.05rem;
     font-weight:800;
     color:var(--azul-900);
     text-transform:uppercase;
     letter-spacing:.5px;
-    margin:18px 0 10px;
+    margin:14px 0 8px;
   }
   .cal-encabezados{
     display:grid;
     grid-template-columns:repeat(7,1fr);
-    gap:6px;
-    margin-bottom:6px;
+    gap:4px;
+    margin-bottom:4px;
   }
   .cal-encabezados div{
     text-align:center;
     font-weight:700;
-    font-size:.8rem;
+    font-size:.72rem;
     color:var(--gris-600);
     text-transform:uppercase;
   }
   .cal-grid{
     display:grid;
     grid-template-columns:repeat(7,1fr);
-    gap:6px;
+    gap:4px;
+    max-width:640px;
+    margin:0 auto;
   }
   .cal-dia{
     position:relative;
-    min-height:110px;
-    border-radius:8px;
+    min-height:62px;
+    border-radius:6px;
     overflow:hidden;
     border:1px solid var(--gris-200);
+    cursor:pointer;
+    transition:transform .1s ease;
+  }
+  .cal-dia:not(.cal-vacio):hover{
+    transform:scale(1.03);
+    box-shadow:0 2px 8px rgba(0,0,0,.18);
+    z-index:5;
   }
   .cal-dia.cal-vacio{
     border:none;
     background:transparent;
+    cursor:default;
   }
+  .cal-dia.cal-vacio:hover{transform:none;box-shadow:none;}
   .cal-dia.cal-hoy{
     border:2px solid var(--azul-700);
   }
@@ -453,9 +464,9 @@
   .cal-c-gris.cal-mitad{background:#e6e6e6;}
   .cal-numero{
     position:absolute;
-    top:6px;
-    left:8px;
-    font-size:1.2rem;
+    top:4px;
+    left:6px;
+    font-size:.85rem;
     font-weight:800;
     color:#fff;
     text-shadow:0 1px 3px rgba(0,0,0,.6);
@@ -463,10 +474,10 @@
   }
   .cal-detalle{
     position:absolute;
-    bottom:5px;
-    left:6px;
-    right:6px;
-    font-size:.62rem;
+    bottom:3px;
+    left:5px;
+    right:5px;
+    font-size:.56rem;
     font-weight:700;
     color:#fff;
     text-shadow:0 1px 3px rgba(0,0,0,.7);
@@ -475,10 +486,76 @@
     z-index:2;
   }
   @media(max-width:700px){
-    .cal-dia{min-height:70px;}
-    .cal-numero{font-size:.95rem;}
-    .cal-detalle{font-size:.55rem;}
-    .cal-encabezados div{font-size:.65rem;}
+    .cal-dia{min-height:48px;}
+    .cal-numero{font-size:.72rem;}
+    .cal-detalle{font-size:.5rem;}
+    .cal-encabezados div{font-size:.6rem;}
+  }
+
+  .cal-detalle-dia-panel{
+    position:relative;
+    margin-top:14px;
+    background:var(--gris-100);
+    border:1px solid var(--gris-200);
+    border-radius:10px;
+    padding:14px 16px;
+    max-width:640px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .cal-detalle-cerrar{
+    position:absolute;
+    top:8px;
+    right:10px;
+    background:transparent;
+    border:none;
+    font-size:.95rem;
+    color:var(--gris-600);
+    cursor:pointer;
+    padding:4px;
+  }
+  .cal-detalle-cerrar:hover{color:var(--rojo);}
+  .cal-detalle-titulo{
+    font-weight:800;
+    font-size:.95rem;
+    color:var(--azul-900);
+    margin-bottom:8px;
+    text-transform:uppercase;
+  }
+  .cal-detalle-estados{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .cal-detalle-estado{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:.8rem;
+    background:#fff;
+    border:1px solid var(--gris-200);
+    border-radius:8px;
+    padding:6px 10px;
+  }
+  table.cal-detalle-tabla{
+    width:100%;
+    border-collapse:collapse;
+    font-size:.76rem;
+    background:#fff;
+  }
+  table.cal-detalle-tabla th{
+    text-align:left;
+    padding:5px 6px;
+    background:var(--gris-100);
+    color:var(--gris-600);
+    font-size:.68rem;
+    text-transform:uppercase;
+    border-bottom:1px solid var(--gris-200);
+  }
+  table.cal-detalle-tabla td{
+    padding:5px 6px;
+    border-bottom:1px solid var(--gris-100);
   }
   .top-fecha{
     display:flex;
@@ -1035,7 +1112,11 @@
       <div class="desc">
         Escoge el mes, y opcionalmente filtra por Piazza, Turno y Supervisor. Si dejas "Todos los turnos",
         cada fecha se divide en dos: la mitad izquierda es <b>Diurno</b>, la mitad derecha es <b>Nocturno</b>.
-        Si escoges un turno específico, la fecha se pinta completa con ese resultado.
+        Si escoges un turno específico, la fecha se pinta completa con ese resultado. Cuando ves
+        <b>"Todas las piazzas"</b>, el color de cada día refleja el <b>peor caso entre todas las piazzas</b>
+        (igual que en Estadística): solo sale verde si <b>todas</b> cumplieron ese día — si una sola piazza
+        no llegó a la meta, el día no se pinta verde, aunque otra piazza se haya pasado del tiempo. Haz clic
+        en cualquier fecha para ver el desglose piazza por piazza.
       </div>
 
       <div class="filtros">
@@ -1087,6 +1168,16 @@
         <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
       </div>
       <div id="cal-grid" class="cal-grid"></div>
+
+      <div id="cal-detalle-dia" class="cal-detalle-dia-panel" style="display:none;">
+        <button type="button" id="cal-detalle-cerrar" class="cal-detalle-cerrar" title="Cerrar">✕</button>
+        <div id="cal-detalle-contenido"></div>
+      </div>
+
+      <div class="acciones-exportar" style="margin-top:16px;">
+        <button class="btn secundario chico" id="cal-exportar-png">⭳ Exportar calendario (PNG)</button>
+        <button class="btn secundario chico" id="cal-exportar-pdf">⭳ Exportar calendario (PDF)</button>
+      </div>
     </div>
   </section>
 
@@ -1159,9 +1250,6 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
     document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
-
-    // El calendario necesita más espacio horizontal para verse grande.
-    document.querySelector("main").classList.toggle("main-ancho", btn.dataset.tab === "calendario");
 
     // Refresca Estadística al entrar a la pestaña (por si cambiaron datos mientras tanto).
     if(btn.dataset.tab === "estadistica" && typeof renderEstadistica === "function"){
@@ -3006,6 +3094,30 @@ function realDelDia(piazzas, fechaStr, turno, supervisorFiltro){
   }).reduce((s,r)=>s+(r.minutos||0),0);
 }
 
+// Calcula el estado (real, meta, color) de CADA piazza por separado, para un turno y fecha dados.
+function desglosePorPiazza(piazzas, fechaStr, turno, supervisorFiltro, diaSemana){
+  return piazzas.map(piazza=>{
+    const meta = metaDelDia([piazza], diaSemana, turno);
+    const real = realDelDia([piazza], fechaStr, turno, supervisorFiltro);
+    return { piazza, meta, real, color: colorDeTurno(real, meta) };
+  });
+}
+
+// Cuando se ven "Todas las piazzas", el color del día NO debe salir de sumar los minutos de todas
+// (eso puede tapar que una piazza no cumplió con el exceso de otra). En vez de eso, se usa el
+// mismo criterio que Estadística: cada Piazza se evalúa por separado, y el color del día es el
+// "peor caso" entre todas — así solo sale verde si TODAS cumplieron (o no tenían meta ese día).
+function colorAgregadoDesde(desglose){
+  const colores = desglose.map(d=>d.color);
+  if(colores.includes("negro")) return "negro";
+  if(colores.includes("amarillo")) return "amarillo";
+  if(colores.includes("verde")) return "verde";
+  return "gris";
+}
+
+let CAL_CONTEXTO = null; // guarda los datos del mes actualmente renderizado, para el clic y la exportación
+let CAL_DATOS_DIA = {};  // { fechaStr: {...datos calculados...} }
+
 function renderCalendario(){
   poblarSupervisorCalendario();
 
@@ -3016,9 +3128,13 @@ function renderCalendario(){
   const titulo = document.getElementById("cal-titulo-mes");
   const grid = document.getElementById("cal-grid");
 
+  ocultarDetalleDia();
+
   if(!mesVal){
     titulo.textContent = "";
     grid.innerHTML = `<div class="vacio" style="grid-column:1/-1;text-align:center;padding:20px;">Escoge un mes para ver el calendario.</div>`;
+    CAL_CONTEXTO = null;
+    CAL_DATOS_DIA = {};
     return;
   }
 
@@ -3031,13 +3147,20 @@ function renderCalendario(){
   const etiquetaPiazza = piazzaFiltro || "Todas las Piazzas";
   const etiquetaTurno = turnoFiltro ? ` · ${turnoFiltro}` : "";
   const etiquetaSupervisor = supervisorFiltro ? ` · ${supervisorFiltro}` : "";
-  titulo.textContent = `${MESES[monthIndex].toUpperCase()} ${year} · ${etiquetaPiazza}${etiquetaTurno}${etiquetaSupervisor}`;
+  const tituloTexto = `${MESES[monthIndex].toUpperCase()} ${year} · ${etiquetaPiazza}${etiquetaTurno}${etiquetaSupervisor}`;
+  titulo.textContent = tituloTexto;
 
   const primerDia = new Date(year, monthIndex, 1);
   const diasEnMes = new Date(year, monthIndex+1, 0).getDate();
   const offsetInicio = (primerDia.getDay() + 6) % 7; // 0 = lunes
 
   const hoyStr = new Date().toISOString().slice(0,10);
+
+  CAL_CONTEXTO = {
+    piazzaFiltro, piazzasConsideradas, mesVal, year, monthIndex, turnoFiltro, supervisorFiltro,
+    etiquetaPiazza, etiquetaTurno, etiquetaSupervisor, tituloTexto, offsetInicio, diasEnMes
+  };
+  CAL_DATOS_DIA = {};
 
   let celdasHTML = "";
   for(let i=0; i<offsetInicio; i++){
@@ -3052,11 +3175,17 @@ function renderCalendario(){
 
     if(turnoFiltro){
       // Un solo turno escogido: la fecha se pinta completa (sin dividir)
-      const meta = metaDelDia(piazzasConsideradas, diaSemana, turnoFiltro);
-      const real = realDelDia(piazzasConsideradas, fechaStr, turnoFiltro, supervisorFiltro);
-      const color = colorDeTurno(real, meta);
+      const desglose = desglosePorPiazza(piazzasConsideradas, fechaStr, turnoFiltro, supervisorFiltro, diaSemana);
+      const color = piazzaFiltro ? desglose[0].color : colorAgregadoDesde(desglose);
+      const meta = desglose.reduce((s,x)=>s+x.meta, 0);
+      const real = desglose.reduce((s,x)=>s+x.real, 0);
 
-      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" title="${turnoFiltro}: ${minAHoras(real)} de ${minAHoras(meta)}">
+      CAL_DATOS_DIA[fechaStr] = {
+        dia:d, soloUnTurno:true, turno:turnoFiltro, meta, real, color,
+        desglose: piazzaFiltro ? null : desglose
+      };
+
+      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" data-fecha="${fechaStr}" title="${turnoFiltro}: ${minAHoras(real)} de ${minAHoras(meta)} (clic para ver detalle)">
         <div class="cal-mitades">
           <div class="cal-mitad cal-c-${color}"></div>
           <div class="cal-mitad cal-c-${color}"></div>
@@ -3065,15 +3194,24 @@ function renderCalendario(){
       </div>`;
     }else{
       // Todos los turnos: la fecha se divide en Diurno (izquierda) y Nocturno (derecha)
-      const metaDiurno = metaDelDia(piazzasConsideradas, diaSemana, "Diurno");
-      const metaNocturno = metaDelDia(piazzasConsideradas, diaSemana, "Nocturno");
-      const realDiurno = realDelDia(piazzasConsideradas, fechaStr, "Diurno", supervisorFiltro);
-      const realNocturno = realDelDia(piazzasConsideradas, fechaStr, "Nocturno", supervisorFiltro);
+      const desgloseDiurno = desglosePorPiazza(piazzasConsideradas, fechaStr, "Diurno", supervisorFiltro, diaSemana);
+      const desgloseNocturno = desglosePorPiazza(piazzasConsideradas, fechaStr, "Nocturno", supervisorFiltro, diaSemana);
 
-      const colorIzq = colorDeTurno(realDiurno, metaDiurno);
-      const colorDer = colorDeTurno(realNocturno, metaNocturno);
+      const colorIzq = piazzaFiltro ? desgloseDiurno[0].color : colorAgregadoDesde(desgloseDiurno);
+      const colorDer = piazzaFiltro ? desgloseNocturno[0].color : colorAgregadoDesde(desgloseNocturno);
 
-      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" title="Diurno: ${minAHoras(realDiurno)} de ${minAHoras(metaDiurno)} · Nocturno: ${minAHoras(realNocturno)} de ${minAHoras(metaNocturno)}">
+      const metaDiurno = desgloseDiurno.reduce((s,x)=>s+x.meta, 0);
+      const realDiurno = desgloseDiurno.reduce((s,x)=>s+x.real, 0);
+      const metaNocturno = desgloseNocturno.reduce((s,x)=>s+x.meta, 0);
+      const realNocturno = desgloseNocturno.reduce((s,x)=>s+x.real, 0);
+
+      CAL_DATOS_DIA[fechaStr] = {
+        dia:d, soloUnTurno:false,
+        metaDiurno, realDiurno, colorIzq, desgloseDiurno: piazzaFiltro ? null : desgloseDiurno,
+        metaNocturno, realNocturno, colorDer, desgloseNocturno: piazzaFiltro ? null : desgloseNocturno
+      };
+
+      celdasHTML += `<div class="cal-dia${esHoy?" cal-hoy":""}" data-fecha="${fechaStr}" title="Diurno: ${minAHoras(realDiurno)} de ${minAHoras(metaDiurno)} · Nocturno: ${minAHoras(realNocturno)} de ${minAHoras(metaNocturno)} (clic para ver detalle)">
         <div class="cal-mitades">
           <div class="cal-mitad cal-c-${colorIzq}"></div>
           <div class="cal-mitad cal-c-${colorDer}"></div>
@@ -3091,7 +3229,245 @@ function renderCalendario(){
   }
 
   grid.innerHTML = celdasHTML;
+
+  grid.querySelectorAll(".cal-dia:not(.cal-vacio)").forEach(celda=>{
+    celda.addEventListener("click", ()=> mostrarDetalleDia(celda.dataset.fecha));
+  });
 }
+
+const ETIQUETA_COLOR = {
+  verde:"Cumplió la meta", amarillo:"Rondó, pero no llegó al tiempo",
+  negro:"No rondó", gris:"Sin meta ese día"
+};
+
+function mostrarDetalleDia(fechaStr){
+  if(!CAL_CONTEXTO || !CAL_DATOS_DIA[fechaStr]) return;
+  const datos = CAL_DATOS_DIA[fechaStr];
+  const panel = document.getElementById("cal-detalle-dia");
+  const contenido = document.getElementById("cal-detalle-contenido");
+
+  function filaDesglose(d){
+    return `<tr>
+      <td>${SIGLAS[d.piazza]||d.piazza}</td>
+      <td>${minAHoras(d.real)}</td>
+      <td>${minAHoras(d.meta)}</td>
+      <td><span class="pill ${d.color==='verde'?'ok':(d.color==='amarillo'?'warn':'bad')}">${ETIQUETA_COLOR[d.color]}</span></td>
+    </tr>`;
+  }
+
+  function tablaDesglose(titulo, desglose){
+    return `<div style="margin-bottom:10px;">
+      <div style="font-weight:700;font-size:.78rem;color:var(--gris-600);margin-bottom:4px;text-transform:uppercase;">${titulo} · por Piazza</div>
+      <table class="cal-detalle-tabla">
+        <thead><tr><th>Piazza</th><th>Real</th><th>Meta</th><th>Estado</th></tr></thead>
+        <tbody>${desglose.map(filaDesglose).join("")}</tbody>
+      </table>
+    </div>`;
+  }
+
+  let chipsHTML = "";
+  let desgloseHTML = "";
+
+  if(datos.soloUnTurno){
+    chipsHTML = `<div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.color}"></span> ${datos.turno}: ${minAHoras(datos.real)} de ${minAHoras(datos.meta)} — ${ETIQUETA_COLOR[datos.color]}</div>`;
+    if(datos.desglose){
+      desgloseHTML = tablaDesglose(datos.turno, datos.desglose);
+    }
+  }else{
+    chipsHTML = `
+      <div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.colorIzq}"></span> Diurno: ${minAHoras(datos.realDiurno)} de ${minAHoras(datos.metaDiurno)} — ${ETIQUETA_COLOR[datos.colorIzq]}</div>
+      <div class="cal-detalle-estado"><span class="cal-chip cal-c-${datos.colorDer}"></span> Nocturno: ${minAHoras(datos.realNocturno)} de ${minAHoras(datos.metaNocturno)} — ${ETIQUETA_COLOR[datos.colorDer]}</div>
+    `;
+    if(datos.desgloseDiurno || datos.desgloseNocturno){
+      desgloseHTML = (datos.desgloseDiurno ? tablaDesglose("Diurno", datos.desgloseDiurno) : "")
+                   + (datos.desgloseNocturno ? tablaDesglose("Nocturno", datos.desgloseNocturno) : "");
+    }
+  }
+
+  const { piazzasConsideradas, turnoFiltro, supervisorFiltro } = CAL_CONTEXTO;
+  const registrosDia = RONDAS.filter(r=>{
+    if(!piazzasConsideradas.includes(r.piazza)) return false;
+    if(r.fecha !== fechaStr) return false;
+    if(turnoFiltro && r.turno !== turnoFiltro) return false;
+    if(supervisorFiltro && r.supervisor !== supervisorFiltro) return false;
+    return true;
+  }).sort((a,b)=> (a.ingreso||"").localeCompare(b.ingreso||""));
+
+  const tablaHTML = registrosDia.length
+    ? `<table class="cal-detalle-tabla">
+        <thead><tr><th>Piazza</th><th>Turno</th><th>Supervisor</th><th>Ingreso</th><th>Salida</th><th>Tiempo</th><th>Operador</th></tr></thead>
+        <tbody>
+          ${registrosDia.map(r=>`<tr>
+            <td>${SIGLAS[r.piazza]||r.piazza}</td>
+            <td>${r.turno}</td>
+            <td>${r.supervisor}</td>
+            <td>${r.ingreso}</td>
+            <td>${r.salida}</td>
+            <td>${minAHoras(r.minutos||0)}</td>
+            <td>${r.operador||"—"}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`
+    : `<div class="vacio">No hay rondas registradas ese día con los filtros actuales.</div>`;
+
+  contenido.innerHTML = `
+    <div class="cal-detalle-titulo">${fechaBonita(fechaStr)}</div>
+    <div class="cal-detalle-estados">${chipsHTML}</div>
+    ${desgloseHTML}
+    <div style="font-weight:700;font-size:.78rem;color:var(--gris-600);margin:8px 0 4px;text-transform:uppercase;">Rondas registradas ese día</div>
+    ${tablaHTML}
+  `;
+  panel.style.display = "block";
+  panel.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+function ocultarDetalleDia(){
+  const panel = document.getElementById("cal-detalle-dia");
+  if(panel) panel.style.display = "none";
+}
+
+document.getElementById("cal-detalle-cerrar").addEventListener("click", ocultarDetalleDia);
+
+/* ---- Exportar Calendario: PNG (con colores) y PDF (calendario + tabla de detalle debajo) ---- */
+function coloresHexCalendario(colorName){
+  switch(colorName){
+    case "verde": return "#2fa84f";
+    case "amarillo": return "#f2c744";
+    case "negro": return "#1a1a1a";
+    default: return "#e0e0e0"; // gris
+  }
+}
+
+function construirSVGCalendario(){
+  if(!CAL_CONTEXTO) return null;
+  const { offsetInicio, diasEnMes, tituloTexto, year, monthIndex } = CAL_CONTEXTO;
+  const cols = 7;
+  const celdaW = 92, celdaH = 66, gap = 4, padTop = 52, padLado = 12;
+  const totalCeldas = offsetInicio + diasEnMes;
+  const filas = Math.ceil(totalCeldas / 7);
+  const W = padLado*2 + cols*celdaW + (cols-1)*gap;
+  const H = padTop + filas*celdaH + (filas-1)*gap + 16;
+
+  const escaparTexto = (s)=> String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',system-ui,sans-serif;">`;
+  svg += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  svg += `<text x="${W/2}" y="22" font-size="15" font-weight="800" fill="#0f2a44" text-anchor="middle">${escaparTexto(tituloTexto)}</text>`;
+
+  const diasSemanaLabels = ["LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"];
+  diasSemanaLabels.forEach((lbl,i)=>{
+    const x = padLado + i*(celdaW+gap) + celdaW/2;
+    svg += `<text x="${x}" y="38" font-size="10.5" font-weight="700" fill="#5b6b7c" text-anchor="middle">${lbl}</text>`;
+  });
+
+  for(let d=1; d<=diasEnMes; d++){
+    const indiceCelda = offsetInicio + (d-1);
+    const fila = Math.floor(indiceCelda/7);
+    const col = indiceCelda % 7;
+    const x = padLado + col*(celdaW+gap);
+    const y = padTop + fila*(celdaH+gap);
+
+    const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const datos = CAL_DATOS_DIA[fechaStr];
+    if(!datos) continue;
+
+    if(datos.soloUnTurno){
+      svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="${coloresHexCalendario(datos.color)}" stroke="#ddd"/>`;
+    }else{
+      svg += `<rect x="${x}" y="${y}" width="${celdaW/2}" height="${celdaH}" fill="${coloresHexCalendario(datos.colorIzq)}"/>`;
+      svg += `<rect x="${x+celdaW/2}" y="${y}" width="${celdaW/2}" height="${celdaH}" fill="${coloresHexCalendario(datos.colorDer)}"/>`;
+      svg += `<rect x="${x}" y="${y}" width="${celdaW}" height="${celdaH}" rx="6" fill="none" stroke="#ddd"/>`;
+    }
+    svg += `<text x="${x+6}" y="${y+15}" font-size="11" font-weight="800" fill="#fff" stroke="#000" stroke-width="2" stroke-opacity="0.35" paint-order="stroke">${d}</text>`;
+  }
+
+  svg += `</svg>`;
+  return { svg, width:W, height:H };
+}
+
+function rasterizarSVGString(svgString, width, height, callback){
+  const svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = ()=>{
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const cctx = canvas.getContext("2d");
+    cctx.fillStyle = "#ffffff";
+    cctx.fillRect(0, 0, width, height);
+    cctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(url);
+    callback(canvas.toDataURL("image/png"));
+  };
+  img.onerror = ()=>{
+    URL.revokeObjectURL(url);
+    callback(null);
+  };
+  img.src = url;
+}
+
+document.getElementById("cal-exportar-png").addEventListener("click", ()=>{
+  if(!CAL_CONTEXTO){ alert("Escoge un mes primero."); return; }
+  const resultado = construirSVGCalendario();
+  if(!resultado){ alert("No hay calendario para exportar."); return; }
+  rasterizarSVGString(resultado.svg, resultado.width, resultado.height, (pngUrl)=>{
+    if(!pngUrl){ alert("No se pudo exportar el calendario como imagen."); return; }
+    const a = document.createElement("a");
+    a.href = pngUrl;
+    a.download = `calendario_${CAL_CONTEXTO.mesVal}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+});
+
+document.getElementById("cal-exportar-pdf").addEventListener("click", ()=>{
+  const JsPDF = obtenerJsPDF();
+  if(!JsPDF){ alert("No se pudo cargar la librería de PDF. Revisa tu conexión e intenta de nuevo."); return; }
+  if(!CAL_CONTEXTO){ alert("Escoge un mes primero."); return; }
+
+  const resultado = construirSVGCalendario();
+  if(!resultado){ alert("No hay calendario para exportar."); return; }
+
+  rasterizarSVGString(resultado.svg, resultado.width, resultado.height, (pngUrl)=>{
+    const docPDF = new JsPDF();
+    docPDF.setFontSize(13);
+    docPDF.setTextColor(15,42,68);
+    docPDF.text(CAL_CONTEXTO.tituloTexto, 14, 14);
+
+    let y = 20;
+    if(pngUrl){
+      const imgW = 182, imgH = imgW * (resultado.height / resultado.width);
+      docPDF.addImage(pngUrl, "PNG", 14, y, imgW, imgH);
+      y += imgH + 8;
+    }
+
+    const { year, monthIndex, diasEnMes } = CAL_CONTEXTO;
+    const filasTabla = [];
+    for(let d=1; d<=diasEnMes; d++){
+      const fechaStr = `${year}-${String(monthIndex+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const datos = CAL_DATOS_DIA[fechaStr];
+      if(!datos) continue;
+      if(datos.soloUnTurno){
+        filasTabla.push([fechaCorta(fechaStr), datos.turno, minAHoras(datos.real), minAHoras(datos.meta), ETIQUETA_COLOR[datos.color]]);
+      }else{
+        filasTabla.push([fechaCorta(fechaStr), "Diurno", minAHoras(datos.realDiurno), minAHoras(datos.metaDiurno), ETIQUETA_COLOR[datos.colorIzq]]);
+        filasTabla.push(["", "Nocturno", minAHoras(datos.realNocturno), minAHoras(datos.metaNocturno), ETIQUETA_COLOR[datos.colorDer]]);
+      }
+    }
+
+    docPDF.autoTable({
+      startY: y,
+      head: [["Fecha","Turno","Real","Meta","Estado"]],
+      body: filasTabla,
+      styles:{ fontSize:8 },
+      headStyles:{ fillColor:[15,42,68] }
+    });
+
+    docPDF.save(`calendario_${CAL_CONTEXTO.mesVal}.pdf`);
+  });
+});
 
 
 </script>

@@ -1,5 +1,5 @@
-const CACHE_NAME = "bunker-rondas-v" + 39;
-const BUILD_TS = "2026-08-21T11-15-00";
+const CACHE_NAME = "bunker-rondas-v" + 52;
+const BUILD_TS = "2026-08-21T15-45-00";
 
 self.addEventListener("install", (event)=>{
   self.skipWaiting();

@@ -1176,8 +1176,9 @@
       <h2>Parámetros de meta por Piazza</h2>
       <div class="desc">
         Para cada Piazza, escoge cuántas horas y minutos debe rondar el supervisor cada día de la semana, por turno
-        (Diurno / Nocturno). <b>Total a la semana</b> = suma de los 7 días (lunes a domingo). <b>Total al mes</b> =
-        ese total semanal × 30. Estos totales son los que se comparan contra lo registrado en Estadística y Calendario.
+        (Diurno / Nocturno). <b>Total a la semana</b> = suma de los 7 días (lunes a domingo). <b>Total al mes</b> aquí
+        es solo una referencia aproximada (un mes promedio tiene ~4.35 semanas). Los cálculos reales de Estadística y
+        Calendario NO usan esta aproximación: suman el objetivo exacto de cada día del mes real que se esté viendo.
         <br><br>
         <b>Hay un juego de parámetros por cada uno de los 12 meses del año</b> (Enero a Diciembre, se repite cada año).
         Escoge abajo qué mes quieres configurar. Si un mes no tiene su propia configuración todavía, automáticamente
@@ -2535,9 +2536,15 @@ function leerFila(rowEl){
 }
 
 function totalesDeFila(datos){
-  // "Total a la semana" ahora suma los 7 días (incluye sábado y domingo).
+  // "Total a la semana" suma los 7 días (incluye sábado y domingo).
   const semana = datos.lunes+datos.martes+datos.miercoles+datos.jueves+datos.viernes+datos.sabado+datos.domingo;
-  const mes = semana * 30;
+  // "Total al mes" aquí es solo una REFERENCIA aproximada para esta pantalla de Parámetros
+  // (no está atada a un mes real específico, con año). Un mes tiene en promedio 30.4375 días
+  // (365.25/12), es decir ~4.348 semanas — NO 30 semanas. Antes se usaba semana×30, lo cual
+  // trataba el mes como si tuviera 30 SEMANAS en vez de 30 días, inflando la meta ~7 veces.
+  // Los cálculos reales de Estadística/Calendario NO usan esta aproximación: suman el objetivo
+  // exacto de cada día del mes real que se esté viendo (ver metaExactaDelMes).
+  const mes = Math.round(semana * (30.4375/7));
   return {semana, mes};
 }
 
@@ -2633,7 +2640,7 @@ document.getElementById("p-exportar-pdf").addEventListener("click", ()=>{
   docPDF.text(`Parámetros de meta por Piazza — BUNKER — ${nombreMesPdf}`, 14, 14);
   docPDF.setFontSize(9);
   docPDF.setTextColor(90,100,110);
-  docPDF.text("Total a la semana = suma de los 7 días. Total al mes = total semanal × 30.", 14, 20);
+  docPDF.text("Total a la semana = suma de los 7 días. Total al mes = referencia aproximada (mes promedio, ~4.35 semanas).", 14, 20);
 
   const body = [];
   PIAZZAS.forEach(piazza=>{
@@ -3253,20 +3260,49 @@ function fechaEnRango(fechaStr, inicio, fin){
   return dtUTC >= inicio && dtUTC <= fin;
 }
 
-function metaPiazza(piazza, modo, periodo, mesNum){
+// Calcula la meta de una Piazza para un modo (Diurno/Nocturno/total) y periodo (semana/mes).
+// mesVal es "YYYY-MM" (con año). Para periodo="mes", se suma EXACTAMENTE el objetivo de cada
+// día real de ese mes según a qué día de la semana caiga — la misma lógica que ya usa el
+// Calendario día por día — sin ninguna aproximación (antes se usaba semana×30, lo cual trataba
+// el mes como si tuviera 30 SEMANAS en vez de 30 días, inflando la meta ~7 veces).
+function metaPiazza(piazza, modo, periodo, mesVal){
+  const mesNum = mesVal.split("-")[1];
   const p = parametrosEfectivos(piazza, mesNum);
-  const totDiurno = totalesDeFila(p.diurno || vacioSemana());
-  const totNocturno = totalesDeFila(p.nocturno || vacioSemana());
-  const campo = periodo==="semana" ? "semana" : "mes";
-  if(modo==="Diurno") return totDiurno[campo];
-  if(modo==="Nocturno") return totNocturno[campo];
-  return totDiurno[campo] + totNocturno[campo];
+  const datosDiurno = p.diurno || vacioSemana();
+  const datosNocturno = p.nocturno || vacioSemana();
+
+  let totDiurno, totNocturno;
+  if(periodo === "semana"){
+    totDiurno = totalesDeFila(datosDiurno).semana;
+    totNocturno = totalesDeFila(datosNocturno).semana;
+  }else{
+    const [yearStr, monthStr] = mesVal.split("-");
+    const year = Number(yearStr), monthIndex = Number(monthStr) - 1;
+    totDiurno = metaExactaDelMes(datosDiurno, year, monthIndex);
+    totNocturno = metaExactaDelMes(datosNocturno, year, monthIndex);
+  }
+
+  if(modo==="Diurno") return totDiurno;
+  if(modo==="Nocturno") return totNocturno;
+  return totDiurno + totNocturno;
+}
+
+// Suma, para cada día real del mes (año + índice de mes dados), el objetivo del día de la
+// semana que le corresponda. Dos meses distintos con el mismo horario semanal pueden dar
+// totales ligeramente distintos (28-31 días, y distinta cantidad de cada día de la semana).
+function metaExactaDelMes(datosTurno, year, monthIndex){
+  const diasEnMes = new Date(year, monthIndex+1, 0).getDate();
+  let total = 0;
+  for(let d=1; d<=diasEnMes; d++){
+    const diaSemana = claveDiaSemana(new Date(year, monthIndex, d));
+    total += datosTurno[diaSemana] || 0;
+  }
+  return total;
 }
 
 // Calcula filas (real/meta/pct por Piazza) para UN mes en concreto. Reutilizado tanto en modo
 // de un solo mes como al comparar varios meses a la vez.
 function calcularFilasParaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
-  const mesNum = mesVal.split("-")[1];
   return piazzasAMostrar.map(piazza=>{
     const real = RONDAS.filter(r=>{
       if(r.piazza !== piazza) return false;
@@ -3276,7 +3312,7 @@ function calcularFilasParaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
       return true;
     }).reduce((s,r)=>s+(r.minutos||0),0);
 
-    const meta = metaPiazza(piazza, modo, "mes", mesNum);
+    const meta = metaPiazza(piazza, modo, "mes", mesVal);
     const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
     return {piazza, real, meta, pct};
   });
@@ -3286,7 +3322,7 @@ function calcularFilasParaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
 // Reutilizado tanto en modo de una sola semana como al comparar varias semanas a la vez.
 function calcularFilasParaSemana(semanaVal, piazzasAMostrar, supervisorFiltro, modo){
   const {inicio, fin} = isoWeekARango(semanaVal);
-  const mesNum = String(inicio.getUTCMonth()+1).padStart(2,"0");
+  const mesVal = `${inicio.getUTCFullYear()}-${String(inicio.getUTCMonth()+1).padStart(2,"0")}`;
   return piazzasAMostrar.map(piazza=>{
     const real = RONDAS.filter(r=>{
       if(r.piazza !== piazza) return false;
@@ -3296,7 +3332,7 @@ function calcularFilasParaSemana(semanaVal, piazzasAMostrar, supervisorFiltro, m
       return true;
     }).reduce((s,r)=>s+(r.minutos||0),0);
 
-    const meta = metaPiazza(piazza, modo, "semana", mesNum);
+    const meta = metaPiazza(piazza, modo, "semana", mesVal);
     const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
     return {piazza, real, meta, pct};
   });
@@ -3323,7 +3359,7 @@ function renderEstadistica(){
   if(comparandoMeses || comparandoSemanas){
     const listaPeriodos = comparandoMeses ? ESTADISTICA_MESES : ESTADISTICA_SEMANAS;
     const nombrePeriodo = comparandoMeses ? "meses" : "semanas";
-    const metaTexto = comparandoMeses ? " (meta mensual: total semanal × 30)." : " (meta semanal: lunes a domingo).";
+    const metaTexto = comparandoMeses ? " (meta mensual: suma exacta de cada día del mes)." : " (meta semanal: lunes a domingo).";
     caption.textContent = baseTxt + metaTexto + ` Comparando ${listaPeriodos.length} ${nombrePeriodo}.`;
 
     const series = listaPeriodos.map((val,i)=>{
@@ -3386,17 +3422,17 @@ function renderEstadistica(){
     const mesVal = ESTADISTICA_MESES[0];
     if(!mesVal) return;
     filtroFecha = (r)=> r.fecha && r.fecha.startsWith(mesVal);
-    mesNumContexto = mesVal.split("-")[1];
+    mesNumContexto = mesVal;
   }else{
     const semanaVal = ESTADISTICA_SEMANAS[0];
     if(!semanaVal) return;
     const {inicio, fin} = isoWeekARango(semanaVal);
     filtroFecha = (r)=> r.fecha && fechaEnRango(r.fecha, inicio, fin);
     // La semana puede cruzar dos meses; se usa el mes del día donde inicia la semana (lunes).
-    mesNumContexto = String(inicio.getUTCMonth()+1).padStart(2,"0");
+    mesNumContexto = `${inicio.getUTCFullYear()}-${String(inicio.getUTCMonth()+1).padStart(2,"0")}`;
   }
 
-  caption.textContent = baseTxt + (periodo==="semana" ? " (meta semanal: lunes a domingo)." : " (meta mensual: total semanal × 30).");
+  caption.textContent = baseTxt + (periodo==="semana" ? " (meta semanal: lunes a domingo)." : " (meta mensual: suma exacta de cada día del mes).");
 
   const filas = piazzasAMostrar.map(piazza=>{
     const real = RONDAS.filter(r=>{
@@ -4071,7 +4107,6 @@ function renderCalendario(){
 // Calcula el cumplimiento del mes, para una lista de piazzas dada (una sola, o todas).
 // Igual que en Estadística pero fijo al mes que se está viendo en el Calendario.
 function calcularFilasEstadisticaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo){
-  const mesNum = mesVal.split("-")[1];
   const filas = piazzasAMostrar.map(piazza=>{
     const filtroBase = (r, turno)=>{
       if(r.piazza !== piazza) return false;
@@ -4082,14 +4117,14 @@ function calcularFilasEstadisticaMes(mesVal, piazzasAMostrar, supervisorFiltro, 
     };
 
     const real = RONDAS.filter(r=> filtroBase(r, modo !== "total" ? modo : null)).reduce((s,r)=>s+(r.minutos||0),0);
-    const meta = metaPiazza(piazza, modo, "mes", mesNum);
+    const meta = metaPiazza(piazza, modo, "mes", mesVal);
     const pct = meta>0 ? Math.round((real/meta)*100) : (real>0 ? 100 : 0);
 
     let metaDiurno, metaNocturno, realDiurno, realNocturno;
     if(modo === "total"){
       // Con "Total" se puede desglosar por turno, para ver cuánto corresponde a cada uno.
-      metaDiurno = metaPiazza(piazza, "Diurno", "mes", mesNum);
-      metaNocturno = metaPiazza(piazza, "Nocturno", "mes", mesNum);
+      metaDiurno = metaPiazza(piazza, "Diurno", "mes", mesVal);
+      metaNocturno = metaPiazza(piazza, "Nocturno", "mes", mesVal);
       realDiurno = RONDAS.filter(r=> filtroBase(r, "Diurno")).reduce((s,r)=>s+(r.minutos||0),0);
       realNocturno = RONDAS.filter(r=> filtroBase(r, "Nocturno")).reduce((s,r)=>s+(r.minutos||0),0);
     }
@@ -4244,7 +4279,7 @@ function renderEstadisticaCalendario(){
 
   // ---- Comparando varios meses a la vez: barras agrupadas, un color por mes ----
   if(comparandoMeses){
-    caption.textContent = baseTxt + " (meta mensual: total semanal × 30). Comparando " + CAL_MESES.length + " meses.";
+    caption.textContent = baseTxt + " (meta mensual: suma exacta de cada día del mes). Comparando " + CAL_MESES.length + " meses.";
 
     const series = CAL_MESES.map((mesVal,i)=>{
       const { filas } = calcularFilasEstadisticaMes(mesVal, piazzasAMostrar, supervisorFiltro, modo);
@@ -4294,7 +4329,7 @@ function renderEstadisticaCalendario(){
   const [yearStr, monthStr] = mesVal.split("-");
   const etiquetaPeriodo = `${MESES[Number(monthStr)-1].toUpperCase()} ${yearStr}`;
 
-  caption.textContent = baseTxt + " (meta mensual: total semanal × 30).";
+  caption.textContent = baseTxt + " (meta mensual: suma exacta de cada día del mes).";
 
   document.getElementById("calest-cum-prom").textContent = promedioPct + "%";
   document.getElementById("calest-total-real").textContent = minAHoras(totalReal);

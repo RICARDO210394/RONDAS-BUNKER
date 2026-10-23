@@ -996,6 +996,7 @@
         <option>Sgto Cedeño</option>
         <option>Moisés Palacios</option>
         <option>Samuel Palacios</option>
+        <option>Henrry Quintero</option>
         <option value="__otro__">Otro (escribir)</option>
       </select>
       <input type="text" id="r-supervisor-otro" placeholder="Escribe el nombre del supervisor" style="display:none;margin-top:8px;">
@@ -1504,7 +1505,7 @@ Object.entries(SIGLAS).forEach(([nombre,sigla])=> SIGLA_A_PIAZZA[sigla.toUpperCa
 
 const SUPERVISORES_CONOCIDOS = [
   "Myr. Patricio Rosas", "Nicole Rosas", "Sgto Caicedo", "Sgto Cedeño",
-  "Moisés Palacios", "Samuel Palacios"
+  "Moisés Palacios", "Samuel Palacios", "Henrry Quintero"
 ];
 
 // Alias de nombres reales (nombre de pila + apellido) que el Excel puede traer,
@@ -1772,6 +1773,24 @@ const supOtro = document.getElementById("r-supervisor-otro");
 supSel.addEventListener("change", ()=>{
   supOtro.style.display = supSel.value === "__otro__" ? "block" : "none";
 });
+
+// Supervisores nuevos (escritos en "Otro") quedan guardados: se toman de las rondas ya registradas
+function refrescarOpcionesSupervisor(){
+  const base = SUPERVISORES_CONOCIDOS.slice();
+  const vistos = new Set(base.map(normalizarTexto));
+  const extras = [];
+  RONDAS.forEach(r=>{
+    const n = (r.supervisor||"").trim();
+    if(n && !vistos.has(normalizarTexto(n))){ vistos.add(normalizarTexto(n)); extras.push(n); }
+  });
+  extras.sort((a,b)=>a.localeCompare(b,"es"));
+  const actual = supSel.value;
+  const nombres = base.concat(extras);
+  supSel.innerHTML = '<option value="">Selecciona...</option>' +
+    nombres.map(n=>`<option>${n.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</option>`).join("") +
+    '<option value="__otro__">Otro (escribir)</option>';
+  if(actual && (nombres.includes(actual) || actual==="__otro__")) supSel.value = actual;
+}
 
 const opSel = document.getElementById("r-operador");
 const opOtro = document.getElementById("r-operador-otro");
@@ -2076,6 +2095,7 @@ function renderTodo(){
 const qRondas = query(collection(db, RONDAS_COL), orderBy("fecha","desc"));
 onSnapshot(qRondas, snap=>{
   RONDAS = snap.docs.map(d=>({id:d.id, ...d.data()}));
+  refrescarOpcionesSupervisor();
   renderTodo();
 }, err=>{
   document.getElementById("historial-lista").innerHTML =

@@ -1000,6 +1000,8 @@
         <option value="__otro__">Otro (escribir)</option>
       </select>
       <input type="text" id="r-supervisor-otro" placeholder="Escribe el nombre del supervisor" style="display:none;margin-top:8px;">
+      <button type="button" class="btn secundario chico" id="sup-admin-btn" style="margin-top:8px;">Administrar supervisores</button>
+      <div id="sup-admin" style="display:none;margin-top:8px;border:1px solid var(--gris-300,#ccc);border-radius:8px;padding:8px;"></div>
 
       <label>Operador <span style="text-transform:none;font-weight:400;color:var(--gris-400);">(quién ingresa este registro)</span></label>
       <select id="r-operador">
@@ -1774,23 +1776,56 @@ supSel.addEventListener("change", ()=>{
   supOtro.style.display = supSel.value === "__otro__" ? "block" : "none";
 });
 
-// Supervisores nuevos (escritos en "Otro") quedan guardados: se toman de las rondas ya registradas
-function refrescarOpcionesSupervisor(){
-  const base = SUPERVISORES_CONOCIDOS.slice();
-  const vistos = new Set(base.map(normalizarTexto));
+// Supervisores: lista base + los que aparecen en rondas, menos los quitados (guardados en Firestore)
+const CONFIG_COL = "bunker_config";
+let SUP_OCULTOS = [];
+function nombresSupervisores(){
+  const ocultos = new Set(SUP_OCULTOS.map(normalizarTexto));
+  const vistos = new Set();
+  const lista = [];
+  SUPERVISORES_CONOCIDOS.forEach(n=>{ const k=normalizarTexto(n); if(!vistos.has(k)){vistos.add(k); lista.push(n);} });
   const extras = [];
   RONDAS.forEach(r=>{
     const n = (r.supervisor||"").trim();
-    if(n && !vistos.has(normalizarTexto(n))){ vistos.add(normalizarTexto(n)); extras.push(n); }
+    const k = normalizarTexto(n);
+    if(n && !vistos.has(k)){ vistos.add(k); extras.push(n); }
   });
-  extras.sort((a,b)=>a.localeCompare(b,"es"));
+  extras.sort((x,y)=>x.localeCompare(y,"es"));
+  return lista.concat(extras).filter(n=>!ocultos.has(normalizarTexto(n)));
+}
+function escHtml(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+function refrescarOpcionesSupervisor(){
   const actual = supSel.value;
-  const nombres = base.concat(extras);
+  const nombres = nombresSupervisores();
   supSel.innerHTML = '<option value="">Selecciona...</option>' +
-    nombres.map(n=>`<option>${n.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</option>`).join("") +
+    nombres.map(n=>`<option>${escHtml(n)}</option>`).join("") +
     '<option value="__otro__">Otro (escribir)</option>';
   if(actual && (nombres.includes(actual) || actual==="__otro__")) supSel.value = actual;
+  renderAdminSupervisores();
 }
+function renderAdminSupervisores(){
+  const cont = document.getElementById("sup-admin");
+  const nombres = nombresSupervisores();
+  cont.innerHTML = '<div style="font-size:12px;margin-bottom:6px;">Quitar un supervisor solo lo oculta de la lista; las rondas ya registradas no se borran.</div>' +
+    (nombres.length ? nombres.map((n,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;"><span>${escHtml(n)}</span><button type="button" class="btn secundario chico" data-quitar="${i}">Quitar</button></div>`).join("") : '<div class="vacio">Sin supervisores.</div>');
+  cont.querySelectorAll("[data-quitar]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const nombre = nombres[Number(btn.dataset.quitar)];
+      if(!confirm(`¿Quitar a "${nombre}" de la lista de supervisores?`)) return;
+      try{
+        await setDoc(doc(db, CONFIG_COL, "supervisores"), {ocultos: SUP_OCULTOS.concat([nombre])});
+      }catch(e){ alert("No se pudo quitar: " + e.message); }
+    });
+  });
+}
+document.getElementById("sup-admin-btn").addEventListener("click", ()=>{
+  const el = document.getElementById("sup-admin");
+  el.style.display = el.style.display === "none" ? "block" : "none";
+});
+onSnapshot(doc(db, CONFIG_COL, "supervisores"), snap=>{
+  SUP_OCULTOS = (snap.exists() && snap.data().ocultos) || [];
+  refrescarOpcionesSupervisor();
+}, ()=>{});
 
 const opSel = document.getElementById("r-operador");
 const opOtro = document.getElementById("r-operador-otro");
@@ -1923,6 +1958,10 @@ document.getElementById("r-guardar").addEventListener("click", async ()=>{
   btn.textContent = "Guardando...";
 
   try{
+    // si el supervisor estaba quitado y se vuelve a usar, reaparece en la lista
+    if(SUP_OCULTOS.some(n=>normalizarTexto(n)===normalizarTexto(supervisor))){
+      setDoc(doc(db, CONFIG_COL, "supervisores"), {ocultos: SUP_OCULTOS.filter(n=>normalizarTexto(n)!==normalizarTexto(supervisor))}).catch(()=>{});
+    }
     if(EDITANDO_ID){
       await updateDoc(doc(db, RONDAS_COL, EDITANDO_ID), datos);
       msg.classList.add("ok");
